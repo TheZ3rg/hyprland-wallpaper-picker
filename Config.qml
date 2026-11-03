@@ -29,7 +29,7 @@ Singleton {
     property QtObject thumbnails: QtObject {
         /// "cover"    = crop to a fixed portrait ratio (best for coverflow)
         /// "preserve" = keep each image's own aspect ratio (letterboxed)
-        property string mode: "covers"
+        property string mode: "cover"
 
         /// Narrow portrait strips.
         property int width: 340
