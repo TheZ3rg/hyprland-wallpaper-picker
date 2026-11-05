@@ -25,4 +25,5 @@ if command -v awww >/dev/null 2>&1; then
 fi
 
 # No instance answered: replace this shell so no wrapper process remains.
-exec qs -p "$DIR"
+# --no-duplicate closes the gap between the IPC check and this launch.
+exec qs -n -p "$DIR"
