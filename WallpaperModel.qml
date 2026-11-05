@@ -59,10 +59,12 @@ Item {
 
         // Restart even if a scan is already in flight. The runningChanged
         // handler starts the replacement after the old process stops.
-        root._restarting = proc.running;
-        proc.running = false;
-        if (!root._restarting)
+        if (proc.running) {
+            root._restarting = true;
+            proc.running = false;
+        } else {
             proc.running = true;
+        }
     }
 
     Process {
