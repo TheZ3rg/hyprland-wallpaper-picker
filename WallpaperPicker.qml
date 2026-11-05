@@ -73,7 +73,7 @@ PanelWindow {
             // remains the fallback.
             const i = model.items.findIndex(it => it.path === awww.currentPath);
             if (i >= 0)
-                strip.currentIndex = i;
+                strip.jumpTo(i);
         }
     }
 
