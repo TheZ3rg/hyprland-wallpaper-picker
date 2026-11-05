@@ -67,7 +67,7 @@ Singleton {
     /// Per-thumbnail fade-in after decoding, in milliseconds; 0 disables it.
     property int thumbnailFadeInDuration: 800
 
-    /// Quit the picker after applying a wallpaper.
+    /// Quit the picker after a wallpaper has been applied successfully.
     property bool closeOnApply: true
 
     property QtObject apply: QtObject {

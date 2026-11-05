@@ -1,18 +1,17 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import qs
 
 /**
  * Wraps the awww CLI.
  *
- * The daemon owns the active wallpaper; the picker only reads it back with
- * `awww query` and persists no copy of its own.
+ * The daemon owns the active wallpaper; the picker reads it back with
+ * `awww query` and reports apply failures instead of closing silently.
  */
 Item {
     id: root
 
-    // Logic-only item: it owns a Process and state but draws nothing.
+    // Logic-only item: it owns the Process objects and state but draws nothing.
     visible: false
     width: 0
     height: 0
@@ -21,32 +20,38 @@ Item {
     property string currentPath: ""
 
     property bool querying: false
+    property bool applying: false
 
     property string error: ""
 
     signal applied(string path)
+    signal applyFailed(string message)
 
     readonly property string applyScript: Quickshell.shellPath("scripts/apply.sh")
+
+    property string _pendingPath: ""
+    property string _applyErr: ""
 
     function refresh() {
         if (queryProc.running)
             return;
         queryProc.buf = "";
+        queryProc.ok = false;
+        queryProc.err = "";
         root.error = "";
         queryProc.running = true;
     }
 
     function apply(path) {
-        if (!path || path === "")
+        if (!path || path === "" || applyProc.running)
             return;
-        Quickshell.execDetached(buildArgs(path));
+
         root.error = "";
-        // Show the choice immediately; the query below reconciles it with the
-        // daemon's actual state.
-        root.currentPath = path;
-        root.applied(path);
-        // The daemon updates its state asynchronously, after the command exits.
-        refreshTimer.restart();
+        root._applyErr = "";
+        root._pendingPath = path;
+        root.applying = true;
+        applyProc.command = buildArgs(path);
+        applyProc.running = true;
     }
 
     function buildArgs(path) {
@@ -98,9 +103,13 @@ Item {
     // The picker only needs the first image path it finds.
     Process {
         id: queryProc
-        command: ["awww", "query"]
+        // A shell wrapper makes a missing binary produce a normal exit code
+        // and stderr instead of a Process that never starts.
+        command: ["bash", "-c", "exec awww query"]
 
         property string buf: ""
+        property string err: ""
+        property bool ok: false
 
         stdout: SplitParser {
             onRead: line => {
@@ -110,25 +119,86 @@ Item {
                     queryProc.buf = m[1];
             }
         }
+        stderr: SplitParser {
+            onRead: line => {
+                if (line !== "")
+                    queryProc.err = line;
+            }
+        }
         onStarted: root.querying = true
         onRunningChanged: {
             if (queryProc.running)
                 return;
             root.querying = false;
-            // Publish whatever was parsed; a failed query leaves it empty and
-            // clears a stale path.
-            root.currentPath = queryProc.buf;
+            // Stdout may be parsed after the process has already exited. Do
+            // not clear a known path on a transient query failure.
+            if (queryProc.ok)
+                root.currentPath = queryProc.buf;
         }
         onExited: (code, status) => {
-            if (code === 127) // the shell could not find awww
+            queryProc.ok = (code === 0);
+            if (code === 0)
+                return;
+            if (code === 127)
                 root.error = "awww not found";
-            else if (code !== 0)
-                root.error = "awww query failed (" + code + ")";
+            else
+                root.error = queryProc.err !== ""
+                    ? queryProc.err
+                    : "awww query failed (" + code + ")";
         }
     }
 
-    // Restarting on every apply debounces the refresh until the last request
-    // has settled.
+    Process {
+        id: applyProc
+
+        stderr: SplitParser {
+            onRead: line => {
+                if (line !== "")
+                    root._applyErr = line;
+            }
+        }
+
+        onRunningChanged: {
+            if (applyProc.running)
+                return;
+
+            // onExited normally clears `applying` first. If it did not, the
+            // process could not be started at all.
+            if (root.applying && root._pendingPath !== "") {
+                root.applying = false;
+                root._pendingPath = "";
+                root.error = "could not start apply.sh";
+                root.applyFailed(root.error);
+            }
+        }
+
+        onExited: (code, status) => {
+            const path = root._pendingPath;
+            const message = root._applyErr !== ""
+                ? root._applyErr
+                : "awww img failed (" + code + ")";
+
+            root.applying = false;
+            root._pendingPath = "";
+            root._applyErr = "";
+
+            if (code !== 0) {
+                root.error = message;
+                root.applyFailed(message);
+                return;
+            }
+
+            root.error = "";
+            root.currentPath = path;
+            root.applied(path);
+            // The daemon updates its state asynchronously, after the command
+            // exits.
+            refreshTimer.restart();
+        }
+    }
+
+    // Restarting on every successful apply debounces the refresh until the
+    // last request has settled.
     Timer {
         id: refreshTimer
         interval: 500

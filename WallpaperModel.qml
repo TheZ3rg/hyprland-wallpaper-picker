@@ -27,6 +27,10 @@ Item {
 
     property string error: ""
 
+    // Last non-empty stderr line from sync-thumbs.sh. It is promoted to
+    // `error` when the script fails.
+    property string _stderr: ""
+
     signal loaded()
 
     readonly property string script: Quickshell.shellPath("scripts/sync-thumbs.sh")
@@ -41,6 +45,7 @@ Item {
         root.items = [];
         root.ready = false;
         root.error = "";
+        root._stderr = "";
         root.scanning = true;
 
         // Restart even if a scan is already in flight.
@@ -82,6 +87,13 @@ Item {
             }
         }
 
+        stderr: SplitParser {
+            onRead: line => {
+                if (line !== "")
+                    root._stderr = line;
+            }
+        }
+
         onStarted: root.scanning = true
 
         onRunningChanged: {
@@ -97,7 +109,9 @@ Item {
         // partial result is still published above.
         onExited: (code, status) => {
             if (code !== 0)
-                root.error = "scan failed (" + code + ")";
+                root.error = root._stderr !== ""
+                    ? root._stderr
+                    : "scan failed (" + code + ")";
         }
     }
 
