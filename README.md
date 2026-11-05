@@ -10,6 +10,8 @@ not by the picker.
 ## Features
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
+- Only a window of tiles around the selection is instantiated, so large
+  folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
   thumbnail size, mode or corner radius regenerates it automatically.
 - Thumbnails are generated with ImageMagick 7; files that cannot be converted
