@@ -74,15 +74,18 @@ Item {
                 if (parts.length < 2 || parts[0] === "")
                     return;
 
-                // Dimensions describe the thumbnail. They are missing only if
-                // ImageMagick failed, so fall back to the requested box size.
-                const w = parseFloat(parts[2]) || Config.thumbnails.width;
-                const h = parseFloat(parts[3]) || Config.thumbnails.height;
+                // Rows are only emitted for successfully generated thumbnails,
+                // so dimensions are always present and describe the real file.
+                const w = parseFloat(parts[2]);
+                const h = parseFloat(parts[3]);
+                if (!(w > 0) || !(h > 0))
+                    return;
+
                 root._buffer.push({
                     path: parts[0],
                     source: "file://" + encodeURI(parts[0]),
                     thumb: "file://" + encodeURI(parts[1]),
-                    aspect: (h > 0) ? (w / h) : 0.7
+                    aspect: w / h
                 });
             }
         }
