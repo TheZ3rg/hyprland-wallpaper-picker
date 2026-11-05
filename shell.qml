@@ -2,12 +2,10 @@ import QtQuick
 import Quickshell
 
 /*
-   Entry point for a standalone picker process.
+   Entry point for a standalone picker process, loaded by `qs -p <project>`.
 
-   `qs -p <project dir>` (and scripts/open-picker.sh) loads this file.
-   ShellRoot is Quickshell's application root: everything inside it belongs to
-   this one `qs` process. The picker is the only child, so quitting the process
-   closes the overlay.
+   The picker is the only child of ShellRoot, so quitting it ends the process
+   and closes the overlay.
  */
 ShellRoot {
     WallpaperPicker {}
