@@ -225,7 +225,7 @@ done < "$sorted"
 # this point, so a temporarily unavailable folder cannot wipe the cache.
 while IFS= read -r -d '' cached; do
     name="${cached##*/}"
-    if [ -z "${used_names[$name]:-}" ]; then
+    if [ -z "${used_names["$name"]:-}" ]; then
         rm -f -- "$cached"
     fi
 done < <(find "$CACHE" -maxdepth 1 -type f -print0 2>/dev/null)
