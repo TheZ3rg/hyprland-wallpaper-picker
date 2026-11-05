@@ -3,7 +3,7 @@
 # Usage: open-picker.sh
 #
 # Toggles the picker: closes a running instance through its IPC handler, or
-# starts a new Quickshell process with the awww daemon ensured.
+# starts a new Quickshell process after ensuring the awww daemon is available.
 
 set -uo pipefail
 
@@ -11,19 +11,17 @@ set -uo pipefail
 # any working directory.
 DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# The daemon normally autostarts with the session. Start it here as a safety
-# net, and poll so the first apply does not race its socket.
-if command -v awww-daemon >/dev/null 2>&1 && ! pgrep -x awww-daemon >/dev/null 2>&1; then
-    setsid awww-daemon >/dev/null 2>&1 &
-    for _ in $(seq 1 50); do
-        pgrep -x awww-daemon >/dev/null 2>&1 && break
-        sleep 0.05
-    done
+# A running instance answers IPC with its `close` handler. `qs ipc call`
+# returns success even when the target is missing, so verify the target first.
+if command -v qs >/dev/null 2>&1 \
+    && qs ipc -p "$DIR" show 2>/dev/null | grep -qx "target wallpaperPicker"; then
+    qs ipc -p "$DIR" call wallpaperPicker close >/dev/null 2>&1 && exit 0
 fi
 
-# A running instance answers IPC with its `close` handler.
-if command -v qs >/dev/null 2>&1 && qs ipc -p "$DIR" call wallpaperPicker close >/dev/null 2>&1; then
-    exit 0
+# Launching needs a working daemon. If it cannot be started, still open the
+# picker so the UI can report the error.
+if command -v awww >/dev/null 2>&1; then
+    bash "$DIR/scripts/ensure-awww-daemon.sh" || true
 fi
 
 # No instance answered: replace this shell so no wrapper process remains.
