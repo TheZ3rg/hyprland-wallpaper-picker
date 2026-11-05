@@ -92,10 +92,9 @@ WORK="$(mktemp -d "$CACHE/.sync-thumbs.XXXXXX")" || {
 }
 trap 'rm -rf -- "$WORK"' EXIT
 
-used_list="$WORK/used"
 list="$WORK/files"
 sorted="$WORK/sorted"
-: > "$used_list"
+declare -A used_names=()
 
 # sort -z keeps the manifest order stable, so the strip does not reshuffle
 # when files are added or removed.
@@ -113,7 +112,8 @@ failed=0
 while IFS= read -r -d '' f; do
     # Include the generation options in the key so changed settings do not
     # reuse stale thumbnails.
-    key="$(printf '%s' "v${CACHE_VERSION}|$f|$MODE|${W}x${H}|r${RADIUS}" | md5sum | cut -d' ' -f1)"
+    key="$(printf '%s' "v${CACHE_VERSION}|$f|$MODE|${W}x${H}|r${RADIUS}" | md5sum)"
+    key="${key%% *}"
     out="$CACHE/$key.$EXT"
     tmp="$WORK/thumb.png"
     final_tmp="$WORK/final.$EXT"
@@ -217,14 +217,15 @@ while IFS= read -r -d '' f; do
         fi
     fi
 
-    printf '%s\n' "$key.$EXT" >> "$used_list"
+    used_names["$key.$EXT"]=1
     printf '%s\t%s\t%s\t%s\n' "$f" "$out" "$tw" "$th"
 done < "$sorted"
 
 # Prune cache entries this scan did not produce. A failed scan returns before
 # this point, so a temporarily unavailable folder cannot wipe the cache.
 while IFS= read -r -d '' cached; do
-    if ! grep -qxF -- "$(basename -- "$cached")" "$used_list"; then
+    name="${cached##*/}"
+    if [ -z "${used_names[$name]:-}" ]; then
         rm -f -- "$cached"
     fi
 done < <(find "$CACHE" -maxdepth 1 -type f -print0 2>/dev/null)
