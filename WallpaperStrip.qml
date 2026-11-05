@@ -22,6 +22,7 @@ Item {
     property int currentIndex: 0
 
     signal activated(int index)
+    signal navigated()
 
     readonly property int count: items.length
     readonly property real baseHeight: height * Config.itemHeightRatio
@@ -59,8 +60,19 @@ Item {
         animatePosition = true;
     }
 
-    function next() { if (currentIndex < count - 1) currentIndex++; }
-    function prev() { if (currentIndex > 0) currentIndex--; }
+    function next() {
+        if (currentIndex < count - 1) {
+            currentIndex++;
+            navigated();
+        }
+    }
+
+    function prev() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            navigated();
+        }
+    }
 
     function updateWindow(force) {
         if (count === 0) {

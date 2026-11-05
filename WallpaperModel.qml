@@ -16,7 +16,7 @@ Item {
     width: 0
     height: 0
 
-    // One object per wallpaper: { path, source, thumb, aspect }.
+    // One object per wallpaper: { path, thumb, aspect }.
     property var items: []
 
     property bool scanning: false
@@ -39,6 +39,15 @@ Item {
     // rebuilding the strip for every line.
     property var _buffer: []
 
+    // True while an in-flight process is being replaced. Its exit must not
+    // publish the empty buffer of the interrupted scan.
+    property bool _restarting: false
+
+    function toFileUrl(path) {
+        // encodeURI leaves # and ?, which QML would treat as URL syntax.
+        return "file://" + path.split("/").map(encodeURIComponent).join("/");
+    }
+
     function rescan() {
         // Drop stale entries immediately: those files may no longer exist.
         root._buffer = [];
@@ -48,9 +57,12 @@ Item {
         root._stderr = "";
         root.scanning = true;
 
-        // Restart even if a scan is already in flight.
+        // Restart even if a scan is already in flight. The runningChanged
+        // handler starts the replacement after the old process stops.
+        root._restarting = proc.running;
         proc.running = false;
-        proc.running = true;
+        if (!root._restarting)
+            proc.running = true;
     }
 
     Process {
@@ -83,8 +95,7 @@ Item {
 
                 root._buffer.push({
                     path: parts[0],
-                    source: "file://" + encodeURI(parts[0]),
-                    thumb: "file://" + encodeURI(parts[1]),
+                    thumb: root.toFileUrl(parts[1]),
                     aspect: w / h
                 });
             }
@@ -100,12 +111,19 @@ Item {
         onStarted: root.scanning = true
 
         onRunningChanged: {
-            if (!proc.running) {
-                root.items = root._buffer;
-                root.scanning = false;
-                root.ready = true;
-                root.loaded();
+            if (proc.running)
+                return;
+
+            if (root._restarting) {
+                root._restarting = false;
+                proc.running = true;
+                return;
             }
+
+            root.items = root._buffer;
+            root.scanning = false;
+            root.ready = true;
+            root.loaded();
         }
 
         // Rows printed before a failure have already been buffered, so a
