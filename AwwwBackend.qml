@@ -19,11 +19,14 @@ Item {
     // Empty while the daemon is not running or shows a plain colour.
     property string currentPath: ""
 
-    property bool querying: false
     property bool applying: false
+
+    // True after a successful query, including a query that found no image.
+    property bool queryDone: false
 
     property string error: ""
 
+    signal queried()
     signal applied(string path)
     signal applyFailed(string message)
 
@@ -31,6 +34,7 @@ Item {
 
     property string _pendingPath: ""
     property string _applyErr: ""
+    property bool _applyStarted: false
 
     function refresh() {
         if (queryProc.running)
@@ -50,6 +54,7 @@ Item {
         root._applyErr = "";
         root._pendingPath = path;
         root.applying = true;
+        root._applyStarted = false;
         applyProc.command = buildArgs(path);
         applyProc.running = true;
     }
@@ -125,15 +130,16 @@ Item {
                     queryProc.err = line;
             }
         }
-        onStarted: root.querying = true
         onRunningChanged: {
             if (queryProc.running)
                 return;
-            root.querying = false;
             // Stdout may be parsed after the process has already exited. Do
             // not clear a known path on a transient query failure.
-            if (queryProc.ok)
-                root.currentPath = queryProc.buf;
+            if (!queryProc.ok)
+                return;
+            root.currentPath = queryProc.buf;
+            root.queryDone = true;
+            root.queried();
         }
         onExited: (code, status) => {
             queryProc.ok = (code === 0);
@@ -158,13 +164,15 @@ Item {
             }
         }
 
+        onStarted: root._applyStarted = true
+
         onRunningChanged: {
             if (applyProc.running)
                 return;
 
-            // onExited normally clears `applying` first. If it did not, the
-            // process could not be started at all.
-            if (root.applying && root._pendingPath !== "") {
+            // onExited normally clears `applying` first. If it did not and
+            // the process never started, report the failure here.
+            if (root.applying && root._pendingPath !== "" && !root._applyStarted) {
                 root.applying = false;
                 root._pendingPath = "";
                 root.error = "could not start apply.sh";
@@ -181,6 +189,7 @@ Item {
             root.applying = false;
             root._pendingPath = "";
             root._applyErr = "";
+            root._applyStarted = false;
 
             if (code !== 0) {
                 root.error = message;

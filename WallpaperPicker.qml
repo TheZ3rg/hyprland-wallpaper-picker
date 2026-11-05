@@ -45,6 +45,10 @@ PanelWindow {
         bottom: true
     }
 
+    // Whether the initial wallpaper has been chosen. A late query result must
+    // not move the strip after the user has started navigating.
+    property bool _initialSelectionDone: false
+
     AwwwBackend {
         id: awww
     }
@@ -65,30 +69,45 @@ PanelWindow {
         onActivated: index => root.applyIndex(index)
     }
 
-    Connections {
-        target: model
-        function onLoaded() {
-            // Start on the wallpaper awww is already showing. findIndex
-            // returns -1 when that file is outside the folder, so index 0
-            // remains the fallback.
+    function applyInitialSelection() {
+        if (root._initialSelectionDone || !model.ready || !awww.queryDone)
+            return;
+
+        // Start on the wallpaper awww is already showing. findIndex returns
+        // -1 when that file is outside the folder, so index 0 is the fallback.
+        if (awww.currentPath !== "") {
             const i = model.items.findIndex(it => it.path === awww.currentPath);
             if (i >= 0)
                 strip.jumpTo(i);
         }
+        root._initialSelectionDone = true;
+    }
+
+    Connections {
+        target: model
+        function onLoaded() { root.applyInitialSelection() }
     }
 
     Connections {
         target: awww
+        function onQueried() { root.applyInitialSelection() }
         function onApplied(path) {
             if (Config.closeOnApply)
                 Qt.quit();
         }
     }
 
+    Connections {
+        target: strip
+        function onNavigated() { root._initialSelectionDone = true }
+    }
+
     function applyIndex(index) {
         const item = model.items[index];
         if (!item)
             return;
+
+        root._initialSelectionDone = true;
 
         // Re-applying the current wallpaper has no visible effect.
         if (item.path === awww.currentPath) {
