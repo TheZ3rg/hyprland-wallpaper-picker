@@ -12,12 +12,12 @@ not by the picker.
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
 - Thumbnail cache keyed by source path and generation options; changing the
   thumbnail size, mode or corner radius regenerates it automatically.
+- Thumbnails are generated with ImageMagick 7; files that cannot be converted
+  are skipped and reported.
 - Starts on the wallpaper awww is currently displaying.
 - Applies wallpapers with configurable awww transitions.
 - Shows scan, query and apply errors in the overlay instead of failing silently.
 - Single-instance toggle through Quickshell IPC.
-- Optional ImageMagick acceleration; without it, original images are loaded
-  directly.
 
 ## Requirements
 
@@ -25,7 +25,7 @@ not by the picker.
 - Quickshell (`qs`)
 - awww, including `awww-daemon`
 - bash, coreutils, findutils, procps-ng and util-linux
-- ImageMagick 7 (`magick`) — optional, but strongly recommended
+- ImageMagick 7 (`magick`)
 
 ## Setup
 
@@ -96,10 +96,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
 - Errors from the scanner, `awww query` and `awww img` are shown at the bottom
   of the overlay.
+- ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
+  or a file that cannot be converted is reported in the overlay.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
-- Without ImageMagick, the picker loads full-size images. This works, but uses
-  more memory and makes scrolling slower.
 - Scanning is non-recursive: only files directly inside the configured folder
   are listed.
 - The picker opens on the monitor that has focus at startup and follows focus
