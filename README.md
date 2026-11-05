@@ -14,6 +14,7 @@ not by the picker.
   thumbnail size, mode or corner radius regenerates it automatically.
 - Starts on the wallpaper awww is currently displaying.
 - Applies wallpapers with configurable awww transitions.
+- Shows scan, query and apply errors in the overlay instead of failing silently.
 - Single-instance toggle through Quickshell IPC.
 - Optional ImageMagick acceleration; without it, original images are loaded
   directly.
@@ -75,8 +76,8 @@ qs -p /path/to/hyprland-wallpaper-picker
 | `Enter` / click | Apply the selected wallpaper |
 | `Escape` | Close without applying |
 
-The picker closes after applying by default; see `closeOnApply` in
-`Config.qml`.
+The picker closes after a successful apply by default; see `closeOnApply` in
+`Config.qml`. If applying fails, it stays open and shows the error.
 
 ## Configuration
 
@@ -93,6 +94,8 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
 ## Notes
 
+- Errors from the scanner, `awww query` and `awww img` are shown at the bottom
+  of the overlay.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
 - Without ImageMagick, the picker loads full-size images. This works, but uses

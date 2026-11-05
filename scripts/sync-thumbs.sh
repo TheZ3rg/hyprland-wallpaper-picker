@@ -26,11 +26,10 @@ if [ -z "$DIR" ] || [ -z "$CACHE" ]; then
     exit 2
 fi
 
-# A missing folder produces an empty manifest rather than an error, so the
-# picker opens with an empty strip.
+# A missing folder is a configuration error; an existing empty folder is not.
 if [ ! -d "$DIR" ]; then
     echo "sync-thumbs.sh: wallpaper dir not found: $DIR" >&2
-    exit 0
+    exit 1
 fi
 
 mkdir -p "$CACHE" 2>/dev/null || true
