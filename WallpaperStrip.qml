@@ -70,6 +70,22 @@ Item {
     // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
+    // Path -> wider preview file URL, supplied by WallpaperPreview.
+    property var previewUrls: ({})
+
+    // 0 = narrow strip crop, 1 = wider focused crop. The picker drives this
+    // when the focused tile's preview becomes available.
+    property real previewBlend: 0
+    Behavior on previewBlend {
+        NumberAnimation {
+            duration: 180
+            easing.type: Easing.OutCubic
+        }
+    }
+
+    readonly property real focusedAspect:
+        Math.max(0.05, Config.previews.aspectRatio * Config.coverflow.focusedWidthScale)
+
     function jumpTo(index) {
         cancelScroll();
         animatePosition = false;
@@ -330,16 +346,21 @@ Item {
             const s = scaleForIndex(i);
 
             // The focused tile's extra size is part of the layout, so the
-            // neighbours slide outward instead of being covered.
+            // neighbours slide outward instead of being covered. Width only
+            // widens once the focused preview is ready.
             const focus = Math.max(0, 1 - Math.abs(i - position));
-            const widthFactor =
-                1 + (Config.coverflow.focusedWidthScale - 1) * focus;
             const heightFactor =
                 1 + (Config.coverflow.focusedHeightScale - 1) * focus;
 
-            const h = baseHeight * s * heightFactor;
             const a = (items[i] && items[i].aspect) ? items[i].aspect : 0.7;
-            const w = baseHeight * s * a * widthFactor;
+            const path = items[i] ? items[i].path : "";
+            const hasPreview = path !== ""
+                && root.previewUrls[path] !== undefined;
+            const wideAspect = hasPreview ? root.focusedAspect : a;
+            const aspect = a + (wideAspect - a) * focus * root.previewBlend;
+
+            const h = baseHeight * s * heightFactor;
+            const w = h * aspect;
             out.push({ x: x, w: w, h: h, s: s });
             x += w + gap;
         }
@@ -394,6 +415,15 @@ Item {
                 && cell.dist <= Config.visibleRange
             readonly property string thumbUrl: cell.entry ? cell.entry.thumb : ""
 
+            readonly property real focusWeight: cell.dataIndex >= 0
+                ? Math.max(0, 1 - Math.abs(cell.dataIndex - root.position))
+                : 0
+            readonly property string previewUrl:
+                cell.entry ? (root.previewUrls[cell.entry.path] ?? "") : ""
+            readonly property bool previewActive:
+                cell.previewUrl !== "" && cell.focusWeight > 0.001
+                && root.previewBlend > 0.001
+
             // Preload tiles just outside the viewport while scrolling, so
             // they have a chance to decode before becoming visible.
             readonly property int loadRadius: Config.visibleRange
@@ -440,6 +470,27 @@ Item {
                             root.decodedUrls[cell.thumbUrl] = true;
                     }
                 }
+            }
+
+            // Wider, higher-resolution crop shown once the focused tile's
+            // preview is ready. The strip thumbnail stays underneath as a
+            // fallback until this image has loaded.
+            Image {
+                id: previewImage
+
+                anchors.fill: parent
+                source: cell.previewActive ? cell.previewUrl : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+                smooth: true
+                property bool loaded: false
+                opacity: (cell.previewActive && loaded)
+                    ? cell.focusWeight * root.previewBlend
+                    : 0
+
+                onSourceChanged: loaded = false
+                onStatusChanged: loaded = (status === Image.Ready)
             }
 
             // A faint outline keeps dark wallpapers distinguishable.

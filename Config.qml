@@ -35,6 +35,26 @@ Singleton {
         property string cacheDir: Quickshell.env("HOME") + "/.cache/qs-wallpaper-picker"
     }
 
+    property QtObject previews: QtObject {
+        /// Generate a wider, higher-resolution crop for the focused tile.
+        property bool enabled: true
+
+        /// Width/height ratio of the focused crop. 0.8 = 4:5, 0.75 = 3:4,
+        /// 1.0 = square, 1.33 = 4:3. focusedWidthScale multiplies this.
+        property real aspectRatio: 0.8
+
+        /// Preview height in pixels; the width follows aspectRatio. Keep it
+        /// at least as tall as the focused card to avoid upscaling.
+        property int height: 1000
+
+        /// Neighbours on each side to pre-generate after the selection
+        /// settles. 0 pre-generates only the focused wallpaper.
+        property int prefetchRadius: 3
+
+        /// Kept separate from thumbnails so the scan prune leaves it alone.
+        property string cacheDir: root.thumbnails.cacheDir + "/previews"
+    }
+
     /// Height of the centred tile as a fraction of the screen height. All
     /// other tile sizes and gaps are derived from it.
     property real itemHeightRatio: 0.28
@@ -52,10 +72,11 @@ Singleton {
         /// Distance in tiles over which the scale falls off.
         property real falloffRange: 9.0
 
-        /// Extra width and height multipliers for the focused tile only.
-        /// The width is part of the strip layout, so neighbouring tiles slide
-        /// outward instead of being covered; the height only makes the
-        /// focused tile taller. 1 = unchanged.
+        /// Extra size multipliers for the focused tile.
+        /// focusedWidthScale multiplies the wider preview crop's aspect
+        /// (previews.aspectRatio); focusedHeightScale makes the focused tile
+        /// taller. The wider card and the neighbour spread appear once the
+        /// preview is ready. 1 = unchanged.
         property real focusedWidthScale: 1.0
         property real focusedHeightScale: 1.0
 
