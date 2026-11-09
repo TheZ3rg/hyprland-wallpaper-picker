@@ -8,9 +8,11 @@ import QtQuick
  * The centre position is fractional and animated, so the whole row slides
  * smoothly between selections.
  *
- * Only a window of delegates around the selection is instantiated. The
- * layout is translation-invariant, so positioning that window locally gives
- * the same geometry as laying out the entire collection.
+ * Only a fixed window of delegates is instantiated. Slots keep their wallpaper
+ * while it stays inside the window, so sliding the window during a long scroll
+ * only reassigns the tiles entering and leaving it. The layout is
+ * translation-invariant, so positioning the window locally gives the same
+ * geometry as laying out the entire collection.
  */
 Item {
     id: root
@@ -34,7 +36,11 @@ Item {
     Behavior on position {
         enabled: root.animatePosition
         NumberAnimation {
-            duration: Config.animationDuration
+            // Long scrolls get their own duration; ordinary selection moves
+            // keep the shorter one.
+            duration: root.scrolling
+                ? Config.scrollAnimationDuration
+                : Config.selectionAnimationDuration
             easing.type: Easing.OutCubic
         }
     }
@@ -46,18 +52,81 @@ Item {
     readonly property int windowRadius: visibleRadius + jumpLimit
     readonly property int windowSize: windowRadius * 2 + 1
 
-    // Index of the first delegate in the window.
+    // Index of the first item in the window.
     property int windowStart: 0
 
-    // URLs whose images have finished decoding. A delegate created after the
-    // window shifts starts opaque instead of fading in a second time.
+    // True while a long scroll animates; the window follows `position`.
+    property bool scrolling: false
+
+    // Fixed delegate slots. slotIndex[s] is the global item index rendered by
+    // slot s; keeping it stable means a window shift only changes the slots
+    // that enter or leave the window.
+    readonly property int slotCount: Math.min(count, windowSize)
+    property var slotIndex: []
+
+    // URLs whose images have finished decoding. A tile that reuses a slot or
+    // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
     function jumpTo(index) {
+        cancelScroll();
         animatePosition = false;
         currentIndex = Math.max(0, Math.min(count - 1, index));
         position = currentIndex;
         animatePosition = true;
+        updateWindow(true);
+    }
+
+    /**
+     * Animate to `index`.
+     *
+     * Nearby targets use the normal selection animation and fit inside the
+     * current window. Distant targets mark the strip as scrolling: the window
+     * then follows `position` frame by frame, so every intermediate tile is
+     * rendered without instantiating the whole collection.
+     */
+    function scrollTo(index) {
+        if (count === 0)
+            return;
+
+        const target = Math.max(0, Math.min(count - 1, index));
+        if (target === currentIndex) {
+            if (scrolling)
+                finishTimer.restart();
+            return;
+        }
+
+        const distance = Math.abs(target - currentIndex);
+        if (distance <= jumpLimit) {
+            currentIndex = target;
+            return;
+        }
+
+        if (Config.scrollAnimationDuration <= 0) {
+            jumpTo(target);
+            return;
+        }
+
+        scrolling = true;
+        finishTimer.restart();
+        currentIndex = target;
+    }
+
+    function cancelScroll() {
+        if (finishTimer)
+            finishTimer.stop();
+        scrolling = false;
+    }
+
+    function finishScroll() {
+        if (!scrolling)
+            return;
+
+        scrolling = false;
+        animatePosition = false;
+        position = currentIndex;
+        animatePosition = true;
+        updateWindow(true);
     }
 
     // Path of the selected wallpaper, or "" when the list is empty.
@@ -93,6 +162,9 @@ Item {
     }
 
     function updateWindow(force) {
+        if (root.scrolling)
+            return;
+
         if (count === 0) {
             windowStart = 0;
             return;
@@ -114,9 +186,77 @@ Item {
             windowStart = start;
     }
 
+    // Keep the scrolling window centred on the animated position.
+    function followScroll() {
+        if (count <= windowSize)
+            return;
+
+        const maxStart = count - windowSize;
+        const half = Math.floor(windowSize / 2);
+        const start = Math.max(0, Math.min(maxStart,
+            Math.round(position) - half));
+        if (start !== windowStart)
+            windowStart = start;
+    }
+
+    /**
+     * Rebuild the slot mapping for the current window.
+     *
+     * Assignments still inside [windowStart, windowStart + slotCount) are
+     * kept; only the freed slots are filled with newly visible indices.
+     */
+    function refreshSlots() {
+        const n = slotCount;
+        if (n <= 0) {
+            slotIndex = [];
+            return;
+        }
+
+        const start = windowStart;
+        const end = start + n;
+        const next = [];
+        const used = ({});
+
+        for (let s = 0; s < n; ++s) {
+            const g = slotIndex[s];
+            if (g >= start && g < end && used[g] !== true) {
+                next[s] = g;
+                used[g] = true;
+            } else {
+                next[s] = -1;
+            }
+        }
+
+        let g = start;
+        for (let s = 0; s < n; ++s) {
+            if (next[s] !== -1)
+                continue;
+            while (g < end && used[g] === true)
+                ++g;
+            if (g >= end)
+                break;
+            next[s] = g;
+            used[g] = true;
+            ++g;
+        }
+
+        slotIndex = next;
+    }
+
+    onPositionChanged: {
+        if (root.scrolling)
+            root.followScroll();
+    }
+
     onCurrentIndexChanged: {
+        if (root.scrolling) {
+            position = currentIndex;
+            finishTimer.restart();
+            return;
+        }
+
         // A jump larger than the window margin cannot be animated through
-        // delegates that were never instantiated.
+        // tiles that are not instantiated.
         if (Math.abs(position - currentIndex) > jumpLimit) {
             animatePosition = false;
             position = currentIndex;
@@ -129,26 +269,37 @@ Item {
 
     // Keep the selection valid when the model shrinks or empties.
     onCountChanged: {
-        if (count === 0)
+        if (count === 0) {
+            cancelScroll();
             currentIndex = 0;
-        else if (currentIndex > count - 1)
+        } else if (currentIndex > count - 1) {
             currentIndex = count - 1;
+        }
         updateWindow(false);
     }
 
+    onSlotCountChanged: refreshSlots()
+    onWindowStartChanged: refreshSlots()
+
     // Replacing the list (initial load, filtered results) must recentre the
     // window; the old windowStart may point past the new end.
-    onItemsChanged: updateWindow(true)
+    onItemsChanged: {
+        cancelScroll();
+        updateWindow(true);
+        refreshSlots();
+    }
     onWindowSizeChanged: updateWindow(true)
-    Component.onCompleted: updateWindow(true)
+    Component.onCompleted: {
+        updateWindow(true);
+        refreshSlots();
+    }
 
-    // Delegate window: entries are { item, index } with global indices.
-    readonly property var windowItems: {
-        const out = [];
-        const end = Math.min(count - 1, windowStart + windowSize - 1);
-        for (let i = windowStart; i <= end; ++i)
-            out.push({ item: items[i], index: i });
-        return out;
+    Timer {
+        id: finishTimer
+
+        // A little longer than the animation so the final frame is painted.
+        interval: Math.max(1, Config.scrollAnimationDuration) + 50
+        onTriggered: root.finishScroll()
     }
 
     function scaleForIndex(i) {
@@ -167,7 +318,7 @@ Item {
     readonly property var metrics: {
         const out = [];
         let x = 0;
-        for (let slot = 0; slot < windowItems.length; ++slot) {
+        for (let slot = 0; slot < slotCount; ++slot) {
             const i = windowStart + slot;
             const s = scaleForIndex(i);
             const h = baseHeight * s;
@@ -198,26 +349,49 @@ Item {
         width / 2 - centreFor(position - windowStart)
 
     Repeater {
-        model: root.windowItems
+        model: root.slotCount
 
         delegate: Item {
             id: cell
 
             required property int index
-            required property var modelData
 
-            readonly property int dataIndex: modelData.index
-            readonly property var entry: modelData.item
+            readonly property int dataIndex: {
+                const g = root.slotIndex[index];
+                return g === undefined ? -1 : g;
+            }
+            readonly property var entry:
+                (cell.dataIndex >= 0 && cell.dataIndex < root.count)
+                    ? root.items[cell.dataIndex]
+                    : null
 
-            // `m` is null until the first layout pass.
-            readonly property var m: root.metrics[index] ?? null
-            readonly property real dist: Math.abs(cell.dataIndex - root.position)
-            readonly property bool shown: m !== null && dist <= Config.visibleRange
+            // `m` is null until the slot is assigned or the layout is ready.
+            readonly property var m: {
+                if (cell.dataIndex < root.windowStart)
+                    return null;
+                return root.metrics[cell.dataIndex - root.windowStart] ?? null;
+            }
+            readonly property real dist: cell.dataIndex >= 0
+                ? Math.abs(cell.dataIndex - root.position)
+                : 1e9
+            readonly property bool shown: cell.m !== null
+                && cell.dist <= Config.visibleRange
             readonly property string thumbUrl: cell.entry ? cell.entry.thumb : ""
 
+            // Preload tiles just outside the viewport while scrolling, so
+            // they have a chance to decode before becoming visible.
+            readonly property int loadRadius: Config.visibleRange
+                + (root.scrolling ? root.jumpLimit : 0)
+            readonly property bool loadable: cell.m !== null
+                && cell.dist <= cell.loadRadius
+
             // Fade each tile in once its thumbnail has decoded, avoiding a
-            // row that pops in item by item.
-            property bool decoded: root.decodedUrls[cell.thumbUrl] === true
+            // row that pops in item by item. The map makes a tile opaque when
+            // it reuses a slot after the window shifted.
+            property string decodedUrl: ""
+            readonly property bool decoded: cell.thumbUrl !== ""
+                && (cell.decodedUrl === cell.thumbUrl
+                    || root.decodedUrls[cell.thumbUrl] === true)
             opacity: (Config.thumbnailFadeInDuration > 0 && !cell.decoded) ? 0 : 1
             Behavior on opacity {
                 NumberAnimation {
@@ -226,19 +400,17 @@ Item {
                 }
             }
 
-            // Hidden tiles also clear their image source, which releases the
-            // decoded texture and bounds memory use.
             visible: shown
             width: m ? m.w : 0
             height: m ? m.h : 0
             x: (m ? m.x : 0) + root.rowTranslate
             y: root.height / 2 - height / 2
             // Higher tiles sit in front of lower ones.
-            z: 1000 - dist
+            z: 1000 - Math.min(cell.dist, 1000)
 
             Image {
                 anchors.fill: parent
-                source: cell.shown ? cell.thumbUrl : ""
+                source: cell.loadable ? cell.thumbUrl : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
@@ -247,7 +419,7 @@ Item {
                     // Reveal failed thumbnails too; otherwise a broken file
                     // would stay invisible instead of showing as an error.
                     if (status === Image.Ready || status === Image.Error) {
-                        cell.decoded = true;
+                        cell.decodedUrl = cell.thumbUrl;
                         if (cell.thumbUrl !== "")
                             root.decodedUrls[cell.thumbUrl] = true;
                     }
@@ -268,7 +440,10 @@ Item {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onClicked: root.activated(cell.dataIndex)
+                onClicked: {
+                    if (cell.dataIndex >= 0)
+                        root.activated(cell.dataIndex);
+                }
             }
         }
     }

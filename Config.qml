@@ -61,8 +61,14 @@ Singleton {
     /// strength is a compositor setting, not a picker setting.
     property real backgroundDim: 0.2
 
-    /// Selection animation in milliseconds; 0 makes it instant.
-    property int animationDuration: 500
+    /// Duration of one-step selection moves (arrows, wheel, trackpad) in
+    /// milliseconds; 0 makes them instant.
+    property int selectionAnimationDuration: 500
+
+    /// Duration of long scrolls to a distant wallpaper (opening, search) in
+    /// milliseconds; 0 makes them instant. A long scroll slides the window
+    /// through the collection instead of instantiating all of it.
+    property int scrollAnimationDuration: 800
 
     /// Per-thumbnail fade-in after decoding, in milliseconds; 0 disables it.
     property int thumbnailFadeInDuration: 800

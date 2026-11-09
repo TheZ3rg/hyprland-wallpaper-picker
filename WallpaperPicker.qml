@@ -115,7 +115,7 @@ PanelWindow {
         if (awww.currentPath !== "") {
             const i = strip.indexOfPath(awww.currentPath);
             if (i >= 0)
-                strip.jumpTo(i);
+                strip.scrollTo(i);
         }
         root._initialSelectionDone = true;
     }
@@ -125,8 +125,9 @@ PanelWindow {
      *
      * `targetPath` wins when it is still present. Otherwise the previous
      * selection is kept, unless `preferBest` asks for the best search match.
+     * `animateScrolling` uses the long scroll animation for the move.
      */
-    function refreshStrip(targetPath, preferBest) {
+    function refreshStrip(targetPath, preferBest, animateScrolling) {
         const previous = strip.currentItemPath;
         strip.items = search.visibleItems;
 
@@ -143,7 +144,11 @@ PanelWindow {
         }
         if (index < 0)
             index = 0;
-        strip.jumpTo(index);
+
+        if (animateScrolling)
+            strip.scrollTo(index);
+        else
+            strip.jumpTo(index);
     }
 
     function handleQueryChanged() {
@@ -151,7 +156,8 @@ PanelWindow {
             // Back to the full list and the pre-search wallpaper.
             if (root._searching) {
                 root._searching = false;
-                root.refreshStrip(root._preSearchPath, false);
+                root.refreshStrip(root._preSearchPath, false,
+                    search.effectiveMode === "scroll");
                 root._preSearchPath = "";
             }
             return;
@@ -162,14 +168,16 @@ PanelWindow {
             root._preSearchPath = strip.currentItemPath;
         }
 
-        root.refreshStrip("", search.effectiveMode === "scroll");
+        root.refreshStrip("", search.effectiveMode === "scroll",
+            search.effectiveMode === "scroll");
     }
 
     function handleModeChanged() {
         if (search.query === "")
-            root.refreshStrip("", false);
+            root.refreshStrip("", false, false);
         else
-            root.refreshStrip("", search.effectiveMode === "scroll");
+            root.refreshStrip("", search.effectiveMode === "scroll",
+                search.effectiveMode === "scroll");
     }
 
     function cancelSearch() {
@@ -186,7 +194,7 @@ PanelWindow {
 
     Connections {
         target: search
-        function onItemsChanged() { root.refreshStrip("", false) }
+        function onItemsChanged() { root.refreshStrip("", false, false) }
         function onQueryChanged() { root.handleQueryChanged() }
         function onModeChanged() { root.handleModeChanged() }
     }

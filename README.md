@@ -102,7 +102,7 @@ documented there. The main groups are:
 - informational status messages;
 - thumbnail mode, size, corner radius and cache directory;
 - strip height, visible range and coverflow scaling;
-- background dim and animation durations;
+- background dim and selection/scroll animation durations;
 - awww resize, filter and transition options.
 
 The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
