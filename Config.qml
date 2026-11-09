@@ -81,7 +81,7 @@ Singleton {
         /// (previews.aspectRatio); focusedHeightScale makes the focused tile
         /// taller. The wider card and the neighbour spread appear once the
         /// preview is ready. 1 = unchanged.
-        property real focusedWidthScale: 1.0
+        property real focusedWidthScale: 1.3
         property real focusedHeightScale: 1.0
 
         /// Gap between tiles in pixels. Unlike the tile sizes, it does not
@@ -137,13 +137,13 @@ Singleton {
 
         /// Vertical anchor of the search field: "top", "center" or "bottom".
         /// Any other value falls back to "top".
-        property string verticalAlignment: "top"
+        property string verticalAlignment: "bottom"
 
         /// Distance between the search field and the anchored screen edges.
-        property int margin: 32
+        property int margin: 15
 
         /// Opacity of the search field while it is not being edited.
-        property real unfocusedOpacity: 0.45
+        property real unfocusedOpacity: 0.8
     }
 
     property QtObject apply: QtObject {
