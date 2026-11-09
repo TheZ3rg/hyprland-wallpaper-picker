@@ -98,6 +98,7 @@ All settings live in [`Config.qml`](Config.qml), and each property is
 documented there. The main groups are:
 
 - wallpaper folder and accepted extensions;
+- layer-shell level of the overlay;
 - search mode, field position, margin and opacity;
 - informational status messages;
 - thumbnail mode, size, corner radius and cache directory;
@@ -117,6 +118,8 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folder
   are listed.
+- `Config.layer` defaults to `overlay`, so the picker covers status bars. Set it
+  to `top` to keep bars that also use the overlay layer visible above the picker.
 - The picker opens on the monitor that has focus at startup and follows focus
   changes while it is open.
 

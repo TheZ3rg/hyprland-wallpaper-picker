@@ -61,6 +61,13 @@ Singleton {
     /// strength is a compositor setting, not a picker setting.
     property real backgroundDim: 0.2
 
+    /// Layer-shell layer of the picker overlay: "background", "bottom", "top"
+    /// or "overlay". "overlay" covers panels and bars (including status bars
+    /// that use the overlay layer); "top" leaves such bars above the picker.
+    /// "bottom" and "background" place the picker under normal windows and are
+    /// rarely useful. Unknown values fall back to "overlay".
+    property string layer: "overlay"
+
     /// Duration of one-step selection moves (arrows, wheel, trackpad) in
     /// milliseconds; 0 makes them instant.
     property int selectionAnimationDuration: 500

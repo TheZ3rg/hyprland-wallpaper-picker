@@ -27,9 +27,10 @@ PanelWindow {
     // Transparent so the compositor-blurred desktop stays visible.
     color: "transparent"
 
-    // Above tiled and floating windows, below lock screens and notification
-    // daemons.
-    WlrLayershell.layer: WlrLayer.Top
+    // Layer-shell level from Config.layer. "overlay" (the default) covers
+    // panels and bars; "top" keeps bars that use the overlay layer above the
+    // picker.
+    WlrLayershell.layer: root.layerFor(Config.layer)
 
     // Must match the namespace used by Hyprland's layer rule.
     WlrLayershell.namespace: "quickshell:wallpaperPicker"
@@ -53,6 +54,21 @@ PanelWindow {
     // query returns to it when it still exists.
     property string _preSearchPath: ""
     property bool _searching: false
+
+    function layerFor(name) {
+        switch (name) {
+        case "background":
+            return WlrLayer.Background;
+        case "bottom":
+            return WlrLayer.Bottom;
+        case "top":
+            return WlrLayer.Top;
+        case "overlay":
+            return WlrLayer.Overlay;
+        default:
+            return WlrLayer.Overlay;
+        }
+    }
 
     AwwwBackend {
         id: awww
