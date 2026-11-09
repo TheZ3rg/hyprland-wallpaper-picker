@@ -92,8 +92,8 @@ the picker. Search matches file names without their extension,
 case-insensitively, and ranks names starting with the query before names that
 merely contain it.
 
-The picker closes after a successful apply by default; see `closeOnApply` in
-`Config.qml`. If applying fails, it stays open and shows the error.
+The picker closes after a successful apply by default; see `apply.closeOnApply`
+in `Config.qml`. If applying fails, it stays open and shows the error.
 
 ## Configuration
 
@@ -101,14 +101,13 @@ All settings live in [`Config.qml`](Config.qml), and each property is
 documented there. The main groups are:
 
 - wallpaper folder and accepted extensions;
-- layer-shell level of the overlay;
-- search mode, field position, margin and opacity;
-- informational status messages;
-- thumbnail mode, size, corner radius and cache directory;
+- thumbnail generation, cache and fade-in;
+- focused preview crop, size, prefetch and expansion duration;
 - strip height, visible range, pixel spacing, coverflow/focused-tile scaling
-  and focused previews;
-- background dim and selection, scroll and search animation durations;
-- awww resize, filter and transition options.
+  and selection/scroll animation durations;
+- overlay layer, background dim and informational messages;
+- search mode, field position, margin, opacity and animation duration;
+- awww apply transitions, resize, filter and close behaviour.
 
 The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
@@ -122,8 +121,9 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folder
   are listed.
-- `Config.layer` defaults to `overlay`, so the picker covers status bars. Set it
-  to `top` to keep bars that also use the overlay layer visible above the picker.
+- `Config.window.layer` defaults to `overlay`, so the picker covers status
+  bars. Set it to `top` to keep bars that also use the overlay layer visible
+  above the picker.
 - Focused previews are cached under `<thumbnails.cacheDir>/previews`. The first
   focus of a wallpaper may briefly keep the narrow strip crop while its preview
   is generated; previews for nearby wallpapers are prefetched after the

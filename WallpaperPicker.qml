@@ -27,10 +27,10 @@ PanelWindow {
     // Transparent so the compositor-blurred desktop stays visible.
     color: "transparent"
 
-    // Layer-shell level from Config.layer. "overlay" (the default) covers
-    // panels and bars; "top" keeps bars that use the overlay layer above the
-    // picker.
-    WlrLayershell.layer: root.layerFor(Config.layer)
+    // Layer-shell level from Config.window.layer. "overlay" (the default)
+    // covers panels and bars; "top" keeps bars that use the overlay layer
+    // above the picker.
+    WlrLayershell.layer: root.layerFor(Config.window.layer)
 
     // Must match the namespace used by Hyprland's layer rule.
     WlrLayershell.namespace: "quickshell:wallpaperPicker"
@@ -111,7 +111,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, Config.backgroundDim)
+        color: Qt.rgba(0, 0, 0, Config.window.backgroundDim)
     }
 
     WallpaperStrip {
@@ -140,7 +140,7 @@ PanelWindow {
         if (awww.currentPath !== "") {
             const i = strip.indexOfPath(awww.currentPath);
             if (i >= 0)
-                strip.scrollTo(i, Config.scrollAnimationDuration);
+                strip.scrollTo(i, Config.strip.scrollDuration);
         }
         root._initialSelectionDone = true;
         root.schedulePreviews();
@@ -190,7 +190,7 @@ PanelWindow {
                 root._searching = false;
                 root.refreshStrip(root._preSearchPath, false,
                     search.effectiveMode === "scroll"
-                        ? Config.searchAnimationDuration
+                        ? Config.search.animationDuration
                         : 0);
                 root._preSearchPath = "";
             }
@@ -204,7 +204,7 @@ PanelWindow {
 
         root.refreshStrip("", search.effectiveMode === "scroll",
             search.effectiveMode === "scroll"
-                ? Config.searchAnimationDuration
+                ? Config.search.animationDuration
                 : 0);
     }
 
@@ -214,7 +214,7 @@ PanelWindow {
         else
             root.refreshStrip("", search.effectiveMode === "scroll",
                 search.effectiveMode === "scroll"
-                    ? Config.searchAnimationDuration
+                    ? Config.search.animationDuration
                     : 0);
     }
 
@@ -276,7 +276,7 @@ PanelWindow {
         target: awww
         function onQueried() { root.applyInitialSelection() }
         function onApplied(path) {
-            if (Config.closeOnApply)
+            if (Config.apply.closeOnApply)
                 Qt.quit();
         }
     }
@@ -298,7 +298,7 @@ PanelWindow {
 
         // Re-applying the current wallpaper has no visible effect.
         if (item.path === awww.currentPath) {
-            if (Config.closeOnApply)
+            if (Config.apply.closeOnApply)
                 Qt.quit();
             return;
         }
@@ -316,7 +316,7 @@ PanelWindow {
             errors.push("awww: " + awww.error);
         if (errors.length > 0)
             return errors.join("\n");
-        if (!Config.showInfoNotifications)
+        if (!Config.window.showInfoNotifications)
             return "";
         if (awww.applying)
             return "Applying wallpaper...";

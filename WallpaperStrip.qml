@@ -27,8 +27,8 @@ Item {
     signal navigated()
 
     readonly property int count: items.length
-    readonly property real baseHeight: height * Config.itemHeightRatio
-    readonly property real gap: Config.coverflow.spacing
+    readonly property real baseHeight: height * Config.strip.itemHeightRatio
+    readonly property real gap: Config.strip.spacing
 
     // Scroll position in index units; fractional while animating.
     property real position: 0
@@ -42,14 +42,14 @@ Item {
             // keep the shorter one.
             duration: root.scrolling
                 ? root.activeScrollDuration
-                : Config.selectionAnimationDuration
+                : Config.strip.selectionDuration
             easing.type: Easing.OutCubic
         }
     }
 
     // The window must cover every tile that can be shown while `position`
     // catches up with `currentIndex`, including the image-loading radius.
-    readonly property int visibleRadius: Math.max(1, Config.visibleRange)
+    readonly property int visibleRadius: Math.max(1, Config.strip.visibleRange)
     readonly property int jumpLimit: Math.max(1, Math.floor(visibleRadius / 2))
     readonly property int windowRadius: visibleRadius + jumpLimit
     readonly property int windowSize: windowRadius * 2 + 1
@@ -84,7 +84,7 @@ Item {
     }
 
     readonly property real focusedAspect:
-        Math.max(0.05, Config.previews.aspectRatio * Config.coverflow.focusedWidthScale)
+        Math.max(0.05, Config.previews.aspectRatio * Config.strip.focusWidthScale)
 
     function jumpTo(index) {
         cancelScroll();
@@ -98,7 +98,7 @@ Item {
     /**
      * Animate to `index` over `duration` milliseconds.
      *
-     * `duration` defaults to scrollAnimationDuration. Nearby targets use the
+     * `duration` defaults to strip.scrollDuration. Nearby targets use the
      * normal selection animation and fit inside the current window. Distant
      * targets mark the strip as scrolling: the window then follows `position`
      * frame by frame, so every intermediate tile is rendered without
@@ -122,7 +122,7 @@ Item {
         }
 
         const scrollDuration = duration === undefined
-            ? Config.scrollAnimationDuration
+            ? Config.strip.scrollDuration
             : duration;
         if (scrollDuration <= 0) {
             jumpTo(target);
@@ -326,12 +326,12 @@ Item {
     }
 
     function scaleForIndex(i) {
-        if (!Config.coverflow.enabled)
+        if (!Config.strip.coverflowEnabled)
             return 1;
         const d = Math.abs(i - position);
-        const t = Math.min(1, d / Math.max(0.001, Config.coverflow.falloffRange));
-        return Config.coverflow.centerScale
-            + (Config.coverflow.edgeScale - Config.coverflow.centerScale) * t;
+        const t = Math.min(1, d / Math.max(0.001, Config.strip.falloffRange));
+        return Config.strip.centerScale
+            + (Config.strip.edgeScale - Config.strip.centerScale) * t;
     }
 
     // Layout for the current window, recomputed on every frame of the
@@ -350,7 +350,7 @@ Item {
             // widens once the focused preview is ready.
             const focus = Math.max(0, 1 - Math.abs(i - position));
             const heightFactor =
-                1 + (Config.coverflow.focusedHeightScale - 1) * focus;
+                1 + (Config.strip.focusHeightScale - 1) * focus;
 
             const a = (items[i] && items[i].aspect) ? items[i].aspect : 0.7;
             const path = items[i] ? items[i].path : "";
@@ -412,7 +412,7 @@ Item {
                 ? Math.abs(cell.dataIndex - root.position)
                 : 1e9
             readonly property bool shown: cell.m !== null
-                && cell.dist <= Config.visibleRange
+                && cell.dist <= Config.strip.visibleRange
             readonly property string thumbUrl: cell.entry ? cell.entry.thumb : ""
 
             readonly property real focusWeight: cell.dataIndex >= 0
@@ -429,7 +429,7 @@ Item {
 
             // Preload tiles just outside the viewport while scrolling, so
             // they have a chance to decode before becoming visible.
-            readonly property int loadRadius: Config.visibleRange
+            readonly property int loadRadius: Config.strip.visibleRange
                 + (root.scrolling ? root.jumpLimit : 0)
             readonly property bool loadable: cell.m !== null
                 && cell.dist <= cell.loadRadius
@@ -441,10 +441,10 @@ Item {
             readonly property bool decoded: cell.thumbUrl !== ""
                 && (cell.decodedUrl === cell.thumbUrl
                     || root.decodedUrls[cell.thumbUrl] === true)
-            opacity: (Config.thumbnailFadeInDuration > 0 && !cell.decoded) ? 0 : 1
+            opacity: (Config.thumbnails.fadeInDuration > 0 && !cell.decoded) ? 0 : 1
             Behavior on opacity {
                 NumberAnimation {
-                    duration: Math.max(1, Config.thumbnailFadeInDuration)
+                    duration: Math.max(1, Config.thumbnails.fadeInDuration)
                     easing.type: Easing.OutCubic
                 }
             }

@@ -37,7 +37,7 @@ Item {
     // The focused card aspect and the preview crop must match so the image
     // fills the card without extra cropping.
     readonly property real aspectRatio:
-        Math.max(0.05, Config.previews.aspectRatio * Config.coverflow.focusedWidthScale)
+        Math.max(0.05, Config.previews.aspectRatio * Config.strip.focusWidthScale)
     readonly property int previewHeight: Math.max(1, Config.previews.height)
     readonly property int previewWidth:
         Math.max(1, Math.round(root.previewHeight * root.aspectRatio))

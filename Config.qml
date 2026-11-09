@@ -7,6 +7,8 @@ import Quickshell
 Singleton {
     id: root
 
+    // ── Source ────────────────────────────────────────────────
+
     /// Folder scanned for wallpapers. Scanning is non-recursive. Must be an
     /// absolute path; `~` is not expanded.
     property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/wallpapers"
@@ -16,6 +18,8 @@ Singleton {
     /// GIFs work, but the first apply and thumbnail generation are slow, and
     /// awww's cache can exceed 100 MB per GIF. Prefer static images.
     property var extensions: ["jpg", "jpeg", "png", "webp", "gif"]
+
+    // ── Thumbnails and focused previews ───────────────────────
 
     property QtObject thumbnails: QtObject {
         /// "cover" crops every image to width x height; "preserve" keeps its
@@ -33,6 +37,9 @@ Singleton {
 
         /// Cache location. Safe to delete; it is rebuilt on the next scan.
         property string cacheDir: Quickshell.env("HOME") + "/.cache/qs-wallpaper-picker"
+
+        /// Per-thumbnail fade-in after decoding, in milliseconds; 0 disables it.
+        property int fadeInDuration: 800
     }
 
     property QtObject previews: QtObject {
@@ -40,7 +47,7 @@ Singleton {
         property bool enabled: true
 
         /// Width/height ratio of the focused crop. 0.8 = 4:5, 0.75 = 3:4,
-        /// 1.0 = square, 1.33 = 4:3. focusedWidthScale multiplies this.
+        /// 1.0 = square, 1.33 = 4:3. focusWidthScale multiplies this.
         property real aspectRatio: 0.8
 
         /// Preview height in pixels; the width follows aspectRatio. Keep it
@@ -59,15 +66,31 @@ Singleton {
         property string cacheDir: root.thumbnails.cacheDir + "/previews"
     }
 
-    /// Height of the centred tile as a fraction of the screen height. All
-    /// other tile sizes and gaps are derived from it.
-    property real itemHeightRatio: 0.28
+    // ── Strip and coverflow ───────────────────────────────────
 
-    /// Tiles farther than this many slots from the selection are unloaded.
-    property int visibleRange: 24
+    property QtObject strip: QtObject {
+        /// Height of the centred tile as a fraction of the screen height. All
+        /// other tile sizes are derived from it.
+        property real itemHeightRatio: 0.28
 
-    property QtObject coverflow: QtObject {
-        property bool enabled: true
+        /// Tiles farther than this many slots from the selection are unloaded.
+        property int visibleRange: 24
+
+        /// Gap between tiles in pixels. Unlike the tile sizes, it does not
+        /// scale with the screen or with the focused tile.
+        property int spacing: 8
+
+        /// Duration of one-step selection moves (arrows, wheel, trackpad) in
+        /// milliseconds; 0 makes them instant.
+        property int selectionDuration: 500
+
+        /// Duration of long scrolls to a distant wallpaper when the picker
+        /// opens, in milliseconds; 0 makes them instant. A long scroll slides
+        /// the window through the collection instead of instantiating all of it.
+        property int scrollDuration: 800
+
+        /// Enable the coverflow scale falloff toward the strip edges.
+        property bool coverflowEnabled: true
 
         /// Scale of the centred tile and of tiles falloffRange slots away.
         property real centerScale: 1.4
@@ -77,53 +100,37 @@ Singleton {
         property real falloffRange: 9.0
 
         /// Extra size multipliers for the focused tile.
-        /// focusedWidthScale multiplies the wider preview crop's aspect
-        /// (previews.aspectRatio); focusedHeightScale makes the focused tile
+        /// focusWidthScale multiplies the wider preview crop's aspect
+        /// (previews.aspectRatio); focusHeightScale makes the focused tile
         /// taller. The wider card and the neighbour spread appear once the
         /// preview is ready. 1 = unchanged.
-        property real focusedWidthScale: 1.3
-        property real focusedHeightScale: 1.0
-
-        /// Gap between tiles in pixels. Unlike the tile sizes, it does not
-        /// scale with the screen or with the focused tile.
-        property int spacing: 8
+        property real focusWidthScale: 1.3
+        property real focusHeightScale: 1.0
     }
 
-    /// Darkness of the overlay over the live desktop, 0..1. The desktop is
-    /// blurred by a Hyprland layer rule on this window's namespace; blur
-    /// strength is a compositor setting, not a picker setting.
-    property real backgroundDim: 0.2
+    // ── Overlay window ────────────────────────────────────────
 
-    /// Layer-shell layer of the picker overlay: "background", "bottom", "top"
-    /// or "overlay". "overlay" covers panels and bars (including status bars
-    /// that use the overlay layer); "top" leaves such bars above the picker.
-    /// "bottom" and "background" place the picker under normal windows and are
-    /// rarely useful. Unknown values fall back to "overlay".
-    property string layer: "overlay"
+    property QtObject window: QtObject {
+        /// Layer-shell layer of the picker overlay: "background", "bottom",
+        /// "top" or "overlay". "overlay" covers panels and bars (including
+        /// status bars that use the overlay layer); "top" leaves such bars
+        /// above the picker. "bottom" and "background" place the picker under
+        /// normal windows and are rarely useful. Unknown values fall back to
+        /// "overlay".
+        property string layer: "overlay"
 
-    /// Duration of one-step selection moves (arrows, wheel, trackpad) in
-    /// milliseconds; 0 makes them instant.
-    property int selectionAnimationDuration: 500
+        /// Darkness of the overlay over the live desktop, 0..1. The desktop is
+        /// blurred by a Hyprland layer rule on this window's namespace; blur
+        /// strength is a compositor setting, not a picker setting.
+        property real backgroundDim: 0.2
 
-    /// Duration of long scrolls to a distant wallpaper when the picker opens,
-    /// in milliseconds; 0 makes them instant. A long scroll slides the window
-    /// through the collection instead of instantiating all of it.
-    property int scrollAnimationDuration: 800
+        /// Show informational messages at the bottom of the overlay: scan and
+        /// apply progress, search match counts and the empty-folder hint.
+        /// Errors are always shown; disable this to keep the overlay quiet.
+        property bool showInfoNotifications: true
+    }
 
-    /// Duration of scroll-mode search jumps in milliseconds; 0 makes them
-    /// instant. Short jumps still use selectionAnimationDuration.
-    property int searchAnimationDuration: 800
-
-    /// Per-thumbnail fade-in after decoding, in milliseconds; 0 disables it.
-    property int thumbnailFadeInDuration: 800
-
-    /// Quit the picker after a wallpaper has been applied successfully.
-    property bool closeOnApply: true
-
-    /// Show informational messages at the bottom of the overlay: scan and
-    /// apply progress, search match counts and the empty-folder hint. Errors
-    /// are always shown; disable this to keep the overlay quiet.
-    property bool showInfoNotifications: true
+    // ── Search ────────────────────────────────────────────────
 
     property QtObject search: QtObject {
         /// How the strip responds to the query.
@@ -144,9 +151,18 @@ Singleton {
 
         /// Opacity of the search field while it is not being edited.
         property real unfocusedOpacity: 0.8
+
+        /// Duration of scroll-mode search jumps in milliseconds; 0 makes them
+        /// instant. Short jumps still use strip.selectionDuration.
+        property int animationDuration: 800
     }
 
+    // ── Apply and quit ────────────────────────────────────────
+
     property QtObject apply: QtObject {
+        /// Quit the picker after a wallpaper has been applied successfully.
+        property bool closeOnApply: true
+
         /// "none" is instant, "grow" expands from the centre, "wipe" sweeps
         /// across (see transitionAngle), "fade" cross-fades, and "wave" is a
         /// wavy wipe.
