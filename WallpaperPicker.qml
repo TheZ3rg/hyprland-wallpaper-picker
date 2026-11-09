@@ -234,6 +234,8 @@ PanelWindow {
             errors.push("awww: " + awww.error);
         if (errors.length > 0)
             return errors.join("\n");
+        if (!Config.showInfoNotifications)
+            return "";
         if (awww.applying)
             return "Applying wallpaper...";
         if (model.scanning)

@@ -99,6 +99,7 @@ documented there. The main groups are:
 
 - wallpaper folder and accepted extensions;
 - search mode, field position, margin and opacity;
+- informational status messages;
 - thumbnail mode, size, corner radius and cache directory;
 - strip height, visible range and coverflow scaling;
 - background dim and animation durations;

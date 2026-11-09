@@ -70,6 +70,11 @@ Singleton {
     /// Quit the picker after a wallpaper has been applied successfully.
     property bool closeOnApply: true
 
+    /// Show informational messages at the bottom of the overlay: scan and
+    /// apply progress, search match counts and the empty-folder hint. Errors
+    /// are always shown; disable this to keep the overlay quiet.
+    property bool showInfoNotifications: true
+
     property QtObject search: QtObject {
         /// How the strip responds to the query.
         /// "scroll" jumps to the best match on every keystroke;
