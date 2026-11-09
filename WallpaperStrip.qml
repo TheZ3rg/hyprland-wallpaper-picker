@@ -328,9 +328,18 @@ Item {
         for (let slot = 0; slot < slotCount; ++slot) {
             const i = windowStart + slot;
             const s = scaleForIndex(i);
-            const h = baseHeight * s;
+
+            // The focused tile's extra size is part of the layout, so the
+            // neighbours slide outward instead of being covered.
+            const focus = Math.max(0, 1 - Math.abs(i - position));
+            const widthFactor =
+                1 + (Config.coverflow.focusedWidthScale - 1) * focus;
+            const heightFactor =
+                1 + (Config.coverflow.focusedHeightScale - 1) * focus;
+
+            const h = baseHeight * s * heightFactor;
             const a = (items[i] && items[i].aspect) ? items[i].aspect : 0.7;
-            const w = h * a;
+            const w = baseHeight * s * a * widthFactor;
             out.push({ x: x, w: w, h: h, s: s });
             x += w + gap;
         }
@@ -407,17 +416,6 @@ Item {
                 }
             }
 
-            // Only the tile closest to the centre gets the extra size. The
-            // weight falls to zero one slot away, so the expansion transfers
-            // smoothly while the strip animates.
-            readonly property real focusWeight: cell.dataIndex >= 0
-                ? Math.max(0, 1 - Math.abs(cell.dataIndex - root.position))
-                : 0
-            readonly property real widthFactor:
-                1 + (Config.coverflow.focusedWidthScale - 1) * cell.focusWeight
-            readonly property real heightFactor:
-                1 + (Config.coverflow.focusedHeightScale - 1) * cell.focusWeight
-
             visible: shown
             width: m ? m.w : 0
             height: m ? m.h : 0
@@ -426,52 +424,41 @@ Item {
             // Higher tiles sit in front of lower ones.
             z: 1000 - Math.min(cell.dist, 1000)
 
-            // The layout cell keeps the base size so neighbours do not move;
-            // the visual may overflow it when the tile is focused.
-            Item {
-                id: visual
-
-                anchors.centerIn: parent
-                width: Math.max(0, cell.width * cell.widthFactor)
-                height: Math.max(0, cell.height * cell.heightFactor)
-
-                Image {
-                    anchors.fill: parent
-                    source: cell.loadable ? cell.thumbUrl : ""
-                    fillMode: Image.PreserveAspectCrop
-                    asynchronous: true
-                    cache: true
-                    smooth: true
-                    onStatusChanged: {
-                        // Reveal failed thumbnails too; otherwise a broken
-                        // file would stay invisible instead of showing as an
-                        // error.
-                        if (status === Image.Ready || status === Image.Error) {
-                            cell.decodedUrl = cell.thumbUrl;
-                            if (cell.thumbUrl !== "")
-                                root.decodedUrls[cell.thumbUrl] = true;
-                        }
+            Image {
+                anchors.fill: parent
+                source: cell.loadable ? cell.thumbUrl : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: true
+                smooth: true
+                onStatusChanged: {
+                    // Reveal failed thumbnails too; otherwise a broken file
+                    // would stay invisible instead of showing as an error.
+                    if (status === Image.Ready || status === Image.Error) {
+                        cell.decodedUrl = cell.thumbUrl;
+                        if (cell.thumbUrl !== "")
+                            root.decodedUrls[cell.thumbUrl] = true;
                     }
                 }
+            }
 
-                // A faint outline keeps dark wallpapers distinguishable.
-                Rectangle {
-                    anchors.fill: parent
-                    radius: Config.thumbnails.cornerRadius > 0
-                        ? Config.thumbnails.cornerRadius * (visual.width / Math.max(1, Config.thumbnails.width))
-                        : 0
-                    color: "transparent"
-                    border.width: 1
-                    border.color: Qt.rgba(1, 1, 1, 0.10)
-                }
+            // A faint outline keeps dark wallpapers distinguishable.
+            Rectangle {
+                anchors.fill: parent
+                radius: Config.thumbnails.cornerRadius > 0
+                    ? Config.thumbnails.cornerRadius * (cell.width / Math.max(1, Config.thumbnails.width))
+                    : 0
+                color: "transparent"
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.10)
+            }
 
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (cell.dataIndex >= 0)
-                            root.activated(cell.dataIndex);
-                    }
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                onClicked: {
+                    if (cell.dataIndex >= 0)
+                        root.activated(cell.dataIndex);
                 }
             }
         }

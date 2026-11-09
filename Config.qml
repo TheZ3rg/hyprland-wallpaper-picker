@@ -53,8 +53,9 @@ Singleton {
         property real falloffRange: 9.0
 
         /// Extra width and height multipliers for the focused tile only.
-        /// They apply on top of the coverflow scale, do not reflow the strip
-        /// and let the enlarged tile overlap its neighbours. 1 = unchanged.
+        /// The width is part of the strip layout, so neighbouring tiles slide
+        /// outward instead of being covered; the height only makes the
+        /// focused tile taller. 1 = unchanged.
         property real focusedWidthScale: 1.0
         property real focusedHeightScale: 1.0
 
