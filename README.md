@@ -102,7 +102,7 @@ documented there. The main groups are:
 - search mode, field position, margin and opacity;
 - informational status messages;
 - thumbnail mode, size, corner radius and cache directory;
-- strip height, visible range and coverflow scaling;
+- strip height, visible range and coverflow/focused-thumbnail scaling;
 - background dim and selection, scroll and search animation durations;
 - awww resize, filter and transition options.
 

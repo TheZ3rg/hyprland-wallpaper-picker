@@ -52,6 +52,12 @@ Singleton {
         /// Distance in tiles over which the scale falls off.
         property real falloffRange: 9.0
 
+        /// Extra width and height multipliers for the focused tile only.
+        /// They apply on top of the coverflow scale, do not reflow the strip
+        /// and let the enlarged tile overlap its neighbours. 1 = unchanged.
+        property real focusedWidthScale: 1.0
+        property real focusedHeightScale: 1.0
+
         /// Gap between tiles as a fraction of the base tile height.
         property real spacingRatio: 0.02
     }
