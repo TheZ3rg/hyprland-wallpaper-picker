@@ -10,8 +10,8 @@ not by the picker.
 ## Features
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
-- Search by wallpaper name: jump to the best match on Enter, scroll while
-  typing, or hide non-matching wallpapers (see `search.mode` in `Config.qml`).
+- Search by wallpaper name: jump to the best match while typing, or hide
+  non-matching wallpapers (see `search.mode` in `Config.qml`).
 - Only a window of tiles around the selection is instantiated, so large
   folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
@@ -81,11 +81,13 @@ qs -p /path/to/hyprland-wallpaper-picker
 | `Ctrl+F` / click the search field | Edit the wallpaper search |
 | `Escape` | Close without applying |
 
-While the search field is focused, `Enter` commits the query and `Escape`
-clears it; a second `Escape` leaves the field, and the next one closes the
-picker. After committing, the next `Enter` applies the selected wallpaper.
-Search matches file names without their extension, case-insensitively, and
-ranks names starting with the query before names that merely contain it.
+While the search field is focused, typing updates the query, `Left` / `Right`
+still move the strip, and `Enter` applies the selected wallpaper. Hold `Ctrl`
+or `Shift` with the arrows to move the text cursor or select text. `Escape`
+clears the query, a second `Escape` leaves the field, and the next one closes
+the picker. Search matches file names without their extension,
+case-insensitively, and ranks names starting with the query before names that
+merely contain it.
 
 The picker closes after a successful apply by default; see `closeOnApply` in
 `Config.qml`. If applying fails, it stays open and shows the error.

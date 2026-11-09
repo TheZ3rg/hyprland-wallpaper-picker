@@ -16,7 +16,9 @@ Rectangle {
     // True while the field holds keyboard focus.
     readonly property bool editing: input.activeFocus
 
-    signal committed()
+    signal movePrevious()
+    signal moveNext()
+    signal submitted()
     signal canceled()
 
     function activate() {
@@ -101,7 +103,22 @@ Rectangle {
         clip: true
         activeFocusOnPress: true
 
-        onAccepted: root.committed()
+        onAccepted: root.submitted()
+
+        // Plain arrows navigate the strip even while editing. Ctrl and Shift
+        // are left to TextInput so word jumps and selection still work.
+        Keys.onLeftPressed: event => {
+            if (event.modifiers & (Qt.ControlModifier | Qt.ShiftModifier))
+                return;
+            root.movePrevious();
+            event.accepted = true;
+        }
+        Keys.onRightPressed: event => {
+            if (event.modifiers & (Qt.ControlModifier | Qt.ShiftModifier))
+                return;
+            root.moveNext();
+            event.accepted = true;
+        }
         Keys.onEscapePressed: event => {
             root.canceled();
             event.accepted = true;

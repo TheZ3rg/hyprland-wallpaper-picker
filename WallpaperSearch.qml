@@ -24,15 +24,10 @@ Item {
 
     property string query: ""
 
-    // "confirm" | "scroll" | "filter"; unknown values fall back to "scroll".
+    // "scroll" | "filter"; unknown values fall back to "scroll".
     property string mode: "scroll"
 
-    readonly property string effectiveMode: {
-        const m = root.mode;
-        return (m === "confirm" || m === "scroll" || m === "filter")
-            ? m
-            : "scroll";
-    }
+    readonly property string effectiveMode: root.mode === "filter" ? "filter" : "scroll"
 
     readonly property string _needle: root.query.trim().toLowerCase()
 

@@ -72,7 +72,6 @@ Singleton {
 
     property QtObject search: QtObject {
         /// How the strip responds to the query.
-        /// "confirm" jumps to the best match only when Enter is pressed;
         /// "scroll" jumps to the best match on every keystroke;
         /// "filter" hides wallpapers that do not match.
         property string mode: "scroll"

@@ -73,7 +73,12 @@ PanelWindow {
         id: searchField
         // Above the status box, which may move out of its way.
         z: 2100
-        onCommitted: root.commitSearch()
+        onMovePrevious: strip.prev()
+        onMoveNext: strip.next()
+        onSubmitted: {
+            if (model.ready)
+                root.applyIndex(strip.currentIndex);
+        }
         onCanceled: root.cancelSearch()
     }
 
@@ -94,12 +99,11 @@ PanelWindow {
         anchors.fill: parent
         items: []
         onActivated: index => {
-            // Clicking a wallpaper ends text editing so the next key press
-            // navigates or applies instead of editing the query.
+            // A click applies immediately and leaves the field, so later
+            // typing does not silently change the query.
             searchField.deactivate();
             root.applyIndex(index);
         }
-        onNavigated: searchField.deactivate()
     }
 
     function applyInitialSelection() {
@@ -158,9 +162,6 @@ PanelWindow {
             root._preSearchPath = strip.currentItemPath;
         }
 
-        if (search.effectiveMode === "confirm")
-            return;
-
         root.refreshStrip("", search.effectiveMode === "scroll");
     }
 
@@ -169,17 +170,6 @@ PanelWindow {
             root.refreshStrip("", false);
         else
             root.refreshStrip("", search.effectiveMode === "scroll");
-    }
-
-    function commitSearch() {
-        // Keep editing so a query with no matches can be corrected.
-        if (search.query.trim() !== "" && search.matchCount === 0)
-            return;
-
-        if (search.effectiveMode === "confirm" && search.bestIndex >= 0)
-            strip.jumpTo(search.bestIndex);
-
-        searchField.deactivate();
     }
 
     function cancelSearch() {
@@ -300,8 +290,9 @@ PanelWindow {
     }
 
     // ApplicationShortcut fires regardless of which child has focus. The
-    // navigation shortcuts are disabled while the search field is being
-    // edited so it can use the arrows and Enter for text editing.
+    // navigation shortcuts stay disabled while the search field is edited:
+    // SearchField forwards plain arrows and Enter to the same actions, and
+    // keeps Ctrl/Shift combinations for text editing.
     Shortcut {
         sequence: "Left"
         context: Qt.ApplicationShortcut
