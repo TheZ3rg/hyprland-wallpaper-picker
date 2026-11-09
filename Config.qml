@@ -70,6 +70,28 @@ Singleton {
     /// Quit the picker after a wallpaper has been applied successfully.
     property bool closeOnApply: true
 
+    property QtObject search: QtObject {
+        /// How the strip responds to the query.
+        /// "confirm" jumps to the best match only when Enter is pressed;
+        /// "scroll" jumps to the best match on every keystroke;
+        /// "filter" hides wallpapers that do not match.
+        property string mode: "scroll"
+
+        /// Horizontal anchor of the search field: "left", "center" or
+        /// "right". Any other value falls back to "center".
+        property string horizontalAlignment: "center"
+
+        /// Vertical anchor of the search field: "top", "center" or "bottom".
+        /// Any other value falls back to "top".
+        property string verticalAlignment: "top"
+
+        /// Distance between the search field and the anchored screen edges.
+        property int margin: 32
+
+        /// Opacity of the search field while it is not being edited.
+        property real unfocusedOpacity: 0.45
+    }
+
     property QtObject apply: QtObject {
         /// "none" is instant, "grow" expands from the centre, "wipe" sweeps
         /// across (see transitionAngle), "fade" cross-fades, and "wave" is a

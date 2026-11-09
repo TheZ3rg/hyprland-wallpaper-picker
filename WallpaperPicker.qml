@@ -49,12 +49,39 @@ PanelWindow {
     // not move the strip after the user has started navigating.
     property bool _initialSelectionDone: false
 
+    // Wallpaper selected before the current search started; clearing the
+    // query returns to it when it still exists.
+    property string _preSearchPath: ""
+    property bool _searching: false
+
     AwwwBackend {
         id: awww
     }
 
     WallpaperModel {
         id: model
+    }
+
+    WallpaperSearch {
+        id: search
+        items: model.items
+        query: searchField.text
+        mode: Config.search.mode
+    }
+
+    SearchField {
+        id: searchField
+        // Above the status box, which may move out of its way.
+        z: 2100
+        onCommitted: root.commitSearch()
+        onCanceled: root.cancelSearch()
+    }
+
+    // Clicking an empty area ends text editing. Tiles and the search field
+    // are above this and keep their own clicks.
+    MouseArea {
+        anchors.fill: parent
+        onClicked: searchField.deactivate()
     }
 
     Rectangle {
@@ -65,27 +92,113 @@ PanelWindow {
     WallpaperStrip {
         id: strip
         anchors.fill: parent
-        items: model.items
-        onActivated: index => root.applyIndex(index)
+        items: []
+        onActivated: index => {
+            // Clicking a wallpaper ends text editing so the next key press
+            // navigates or applies instead of editing the query.
+            searchField.deactivate();
+            root.applyIndex(index);
+        }
+        onNavigated: searchField.deactivate()
     }
 
     function applyInitialSelection() {
         if (root._initialSelectionDone || !model.ready || !awww.queryDone)
             return;
 
-        // Start on the wallpaper awww is already showing. findIndex returns
-        // -1 when that file is outside the folder, so index 0 is the fallback.
+        // Start on the wallpaper awww is already showing. indexOfPath returns
+        // -1 when that file is outside the current list, so index 0 stays.
         if (awww.currentPath !== "") {
-            const i = model.items.findIndex(it => it.path === awww.currentPath);
+            const i = strip.indexOfPath(awww.currentPath);
             if (i >= 0)
                 strip.jumpTo(i);
         }
         root._initialSelectionDone = true;
     }
 
+    /**
+     * Replace the strip contents and pick the new selection.
+     *
+     * `targetPath` wins when it is still present. Otherwise the previous
+     * selection is kept, unless `preferBest` asks for the best search match.
+     */
+    function refreshStrip(targetPath, preferBest) {
+        const previous = strip.currentItemPath;
+        strip.items = search.visibleItems;
+
+        let index = targetPath ? strip.indexOfPath(targetPath) : -1;
+        if (index < 0) {
+            if (preferBest && search.bestIndex >= 0)
+                index = search.bestIndex;
+            else if (!preferBest)
+                index = strip.indexOfPath(previous);
+            if (index < 0 && search.bestIndex >= 0)
+                index = search.bestIndex;
+            if (index < 0 && preferBest)
+                index = strip.indexOfPath(previous);
+        }
+        if (index < 0)
+            index = 0;
+        strip.jumpTo(index);
+    }
+
+    function handleQueryChanged() {
+        if (search.query === "") {
+            // Back to the full list and the pre-search wallpaper.
+            if (root._searching) {
+                root._searching = false;
+                root.refreshStrip(root._preSearchPath, false);
+                root._preSearchPath = "";
+            }
+            return;
+        }
+
+        if (!root._searching) {
+            root._searching = true;
+            root._preSearchPath = strip.currentItemPath;
+        }
+
+        if (search.effectiveMode === "confirm")
+            return;
+
+        root.refreshStrip("", search.effectiveMode === "scroll");
+    }
+
+    function handleModeChanged() {
+        if (search.query === "")
+            root.refreshStrip("", false);
+        else
+            root.refreshStrip("", search.effectiveMode === "scroll");
+    }
+
+    function commitSearch() {
+        // Keep editing so a query with no matches can be corrected.
+        if (search.query.trim() !== "" && search.matchCount === 0)
+            return;
+
+        if (search.effectiveMode === "confirm" && search.bestIndex >= 0)
+            strip.jumpTo(search.bestIndex);
+
+        searchField.deactivate();
+    }
+
+    function cancelSearch() {
+        if (searchField.text !== "")
+            searchField.text = ""; // clears the query and restores the list
+        else
+            searchField.deactivate();
+    }
+
     Connections {
         target: model
         function onLoaded() { root.applyInitialSelection() }
+    }
+
+    Connections {
+        target: search
+        function onItemsChanged() { root.refreshStrip("", false) }
+        function onQueryChanged() { root.handleQueryChanged() }
+        function onModeChanged() { root.handleModeChanged() }
     }
 
     Connections {
@@ -103,7 +216,9 @@ PanelWindow {
     }
 
     function applyIndex(index) {
-        const item = model.items[index];
+        // Filtering changes the strip's list, so read from it rather than
+        // from the model.
+        const item = strip.items[index];
         if (!item)
             return;
 
@@ -133,6 +248,12 @@ PanelWindow {
             return "Applying wallpaper...";
         if (model.scanning)
             return "Scanning wallpapers...";
+        const q = search.query.trim();
+        if (q !== "") {
+            if (search.matchCount === 0)
+                return "No matches for \"" + q + "\"";
+            return search.matchCount + (search.matchCount === 1 ? " match" : " matches");
+        }
         if (model.ready && model.items.length === 0)
             return "No wallpapers found in " + Config.wallpaperDir;
         return "";
@@ -146,7 +267,11 @@ PanelWindow {
         visible: root.statusText !== ""
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: 32
+        // Reserve the bottom band while the search field is anchored there,
+        // so the two never overlap.
+        anchors.bottomMargin: Config.search.verticalAlignment === "bottom"
+            ? Math.max(32, Math.max(0, Config.search.margin) + searchField.height + 12)
+            : 32
         width: Math.min(parent.width - 64, Math.max(180, statusMetrics.width + 32))
         height: statusText.contentHeight + 24
         radius: 8
@@ -174,29 +299,40 @@ PanelWindow {
         }
     }
 
-    // ApplicationShortcut fires regardless of which child has focus.
+    // ApplicationShortcut fires regardless of which child has focus. The
+    // navigation shortcuts are disabled while the search field is being
+    // edited so it can use the arrows and Enter for text editing.
     Shortcut {
         sequence: "Left"
         context: Qt.ApplicationShortcut
+        enabled: !searchField.editing
         onActivated: strip.prev()
     }
     Shortcut {
         sequence: "Right"
         context: Qt.ApplicationShortcut
+        enabled: !searchField.editing
         onActivated: strip.next()
+    }
+
+    Shortcut {
+        sequence: "Ctrl+F"
+        context: Qt.ApplicationShortcut
+        onActivated: searchField.activate()
     }
 
     // Enter stays disabled until the first scan completes.
     Shortcut {
         sequence: "Return"
         context: Qt.ApplicationShortcut
-        enabled: model.ready
+        enabled: model.ready && !searchField.editing
         onActivated: root.applyIndex(strip.currentIndex)
     }
 
     Shortcut {
         sequence: "Escape"
         context: Qt.ApplicationShortcut
+        enabled: !searchField.editing
         onActivated: Qt.quit()
     }
 

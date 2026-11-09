@@ -60,6 +60,24 @@ Item {
         animatePosition = true;
     }
 
+    // Path of the selected wallpaper, or "" when the list is empty.
+    readonly property string currentItemPath: {
+        const item = items[currentIndex];
+        return item ? item.path : "";
+    }
+
+    // Index of the wallpaper with `path`, or -1. Used to keep the selection
+    // across filtering and rescans.
+    function indexOfPath(path) {
+        if (!path)
+            return -1;
+        for (let i = 0; i < items.length; ++i) {
+            if (items[i] && items[i].path === path)
+                return i;
+        }
+        return -1;
+    }
+
     function next() {
         if (currentIndex < count - 1) {
             currentIndex++;
@@ -118,7 +136,9 @@ Item {
         updateWindow(false);
     }
 
-    onItemsChanged: updateWindow(false)
+    // Replacing the list (initial load, filtered results) must recentre the
+    // window; the old windowStart may point past the new end.
+    onItemsChanged: updateWindow(true)
     onWindowSizeChanged: updateWindow(true)
     Component.onCompleted: updateWindow(true)
 
