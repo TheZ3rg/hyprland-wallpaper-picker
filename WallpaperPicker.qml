@@ -129,7 +129,11 @@ PanelWindow {
      */
     function refreshStrip(targetPath, preferBest, animateScrolling) {
         const previous = strip.currentItemPath;
-        strip.items = search.visibleItems;
+        // In scroll mode the list itself does not change; avoid resetting the
+        // window (and interrupting a running scroll) on every keystroke.
+        const nextItems = search.visibleItems;
+        if (strip.items !== nextItems)
+            strip.items = nextItems;
 
         let index = targetPath ? strip.indexOfPath(targetPath) : -1;
         if (index < 0) {
