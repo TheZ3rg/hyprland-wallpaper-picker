@@ -28,7 +28,7 @@ Item {
 
     readonly property int count: items.length
     readonly property real baseHeight: height * Config.itemHeightRatio
-    readonly property real gap: Config.coverflow.spacingRatio * baseHeight
+    readonly property real gap: Config.coverflow.spacing
 
     // Scroll position in index units; fractional while animating.
     property real position: 0

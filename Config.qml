@@ -84,8 +84,9 @@ Singleton {
         property real focusedWidthScale: 1.0
         property real focusedHeightScale: 1.0
 
-        /// Gap between tiles as a fraction of the base tile height.
-        property real spacingRatio: 0.02
+        /// Gap between tiles in pixels. Unlike the tile sizes, it does not
+        /// scale with the screen or with the focused tile.
+        property int spacing: 8
     }
 
     /// Darkness of the overlay over the live desktop, 0..1. The desktop is
