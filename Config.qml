@@ -65,10 +65,14 @@ Singleton {
     /// milliseconds; 0 makes them instant.
     property int selectionAnimationDuration: 500
 
-    /// Duration of long scrolls to a distant wallpaper (opening, search) in
-    /// milliseconds; 0 makes them instant. A long scroll slides the window
+    /// Duration of long scrolls to a distant wallpaper when the picker opens,
+    /// in milliseconds; 0 makes them instant. A long scroll slides the window
     /// through the collection instead of instantiating all of it.
     property int scrollAnimationDuration: 800
+
+    /// Duration of scroll-mode search jumps in milliseconds; 0 makes them
+    /// instant. Short jumps still use selectionAnimationDuration.
+    property int searchAnimationDuration: 800
 
     /// Per-thumbnail fade-in after decoding, in milliseconds; 0 disables it.
     property int thumbnailFadeInDuration: 800

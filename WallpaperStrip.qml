@@ -33,13 +33,15 @@ Item {
     // Scroll position in index units; fractional while animating.
     property real position: 0
     property bool animatePosition: true
+    // Duration of the current long scroll; set by scrollTo().
+    property int activeScrollDuration: 0
     Behavior on position {
         enabled: root.animatePosition
         NumberAnimation {
             // Long scrolls get their own duration; ordinary selection moves
             // keep the shorter one.
             duration: root.scrolling
-                ? Config.scrollAnimationDuration
+                ? root.activeScrollDuration
                 : Config.selectionAnimationDuration
             easing.type: Easing.OutCubic
         }
@@ -78,14 +80,15 @@ Item {
     }
 
     /**
-     * Animate to `index`.
+     * Animate to `index` over `duration` milliseconds.
      *
-     * Nearby targets use the normal selection animation and fit inside the
-     * current window. Distant targets mark the strip as scrolling: the window
-     * then follows `position` frame by frame, so every intermediate tile is
-     * rendered without instantiating the whole collection.
+     * `duration` defaults to scrollAnimationDuration. Nearby targets use the
+     * normal selection animation and fit inside the current window. Distant
+     * targets mark the strip as scrolling: the window then follows `position`
+     * frame by frame, so every intermediate tile is rendered without
+     * instantiating the whole collection.
      */
-    function scrollTo(index) {
+    function scrollTo(index, duration) {
         if (count === 0)
             return;
 
@@ -102,11 +105,15 @@ Item {
             return;
         }
 
-        if (Config.scrollAnimationDuration <= 0) {
+        const scrollDuration = duration === undefined
+            ? Config.scrollAnimationDuration
+            : duration;
+        if (scrollDuration <= 0) {
             jumpTo(target);
             return;
         }
 
+        activeScrollDuration = scrollDuration;
         scrolling = true;
         finishTimer.restart();
         currentIndex = target;
@@ -298,7 +305,7 @@ Item {
         id: finishTimer
 
         // A little longer than the animation so the final frame is painted.
-        interval: Math.max(1, Config.scrollAnimationDuration) + 50
+        interval: Math.max(1, root.activeScrollDuration) + 50
         onTriggered: root.finishScroll()
     }
 
