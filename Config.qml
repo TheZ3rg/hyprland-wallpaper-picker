@@ -47,6 +47,10 @@ Singleton {
         /// at least as tall as the focused card to avoid upscaling.
         property int height: 1000
 
+        /// Duration of the focused card's widening, in milliseconds;
+        /// 0 makes it instant.
+        property int expandDuration: 240
+
         /// Neighbours on each side to pre-generate after the selection
         /// settles. 0 pre-generates only the focused wallpaper.
         property int prefetchRadius: 3

@@ -78,7 +78,7 @@ Item {
     property real previewBlend: 0
     Behavior on previewBlend {
         NumberAnimation {
-            duration: 180
+            duration: Math.max(0, Config.previews.expandDuration)
             easing.type: Easing.OutCubic
         }
     }
@@ -422,7 +422,10 @@ Item {
                 cell.entry ? (root.previewUrls[cell.entry.path] ?? "") : ""
             readonly property bool previewActive:
                 cell.previewUrl !== "" && cell.focusWeight > 0.001
-                && root.previewBlend > 0.001
+
+            // True once the preview image has decoded. The base thumbnail is
+            // hidden then, so the two crops never overlap visually.
+            property bool previewLoaded: false
 
             // Preload tiles just outside the viewport while scrolling, so
             // they have a chance to decode before becoming visible.
@@ -461,6 +464,7 @@ Item {
                 asynchronous: true
                 cache: true
                 smooth: true
+                opacity: (cell.previewActive && cell.previewLoaded) ? 0 : 1
                 onStatusChanged: {
                     // Reveal failed thumbnails too; otherwise a broken file
                     // would stay invisible instead of showing as an error.
@@ -473,8 +477,8 @@ Item {
             }
 
             // Wider, higher-resolution crop shown once the focused tile's
-            // preview is ready. The strip thumbnail stays underneath as a
-            // fallback until this image has loaded.
+            // preview is ready. It stays opaque; the widening animation
+            // reveals more of it instead of cross-fading over the thumbnail.
             Image {
                 id: previewImage
 
@@ -484,13 +488,10 @@ Item {
                 asynchronous: true
                 cache: true
                 smooth: true
-                property bool loaded: false
-                opacity: (cell.previewActive && loaded)
-                    ? cell.focusWeight * root.previewBlend
-                    : 0
+                opacity: (cell.previewActive && cell.previewLoaded) ? 1 : 0
 
-                onSourceChanged: loaded = false
-                onStatusChanged: loaded = (status === Image.Ready)
+                onSourceChanged: cell.previewLoaded = false
+                onStatusChanged: cell.previewLoaded = (status === Image.Ready)
             }
 
             // A faint outline keeps dark wallpapers distinguishable.
