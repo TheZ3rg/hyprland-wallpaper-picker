@@ -124,9 +124,8 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 - `Config.window.layer` defaults to `overlay`, so the picker covers status
   bars. Set it to `top` to keep bars that also use the overlay layer visible
   above the picker.
-- Focused previews are cached under `<thumbnails.cacheDir>/previews`. The scan
-  reports which previews are already cached, so those tiles widen immediately;
-  missing previews are generated on demand after the selection settles.
+- Focused previews are generated and cached during the scan, like thumbnails.
+  Missing or failed previews are retried on demand around the selection.
 - The picker opens on the monitor that has focus at startup and follows focus
   changes while it is open.
 

@@ -7,7 +7,8 @@
 #
 #     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>\t<previewPath>
 #
-# <previewPath> is empty unless a valid cached focused preview already exists.
+# <previewPath> is generated or reused during the scan and is empty only if
+# preview generation failed.
 # ImageMagick 7 is required. Thumbnails are keyed by the source path,
 # generation options and cache version, and are regenerated when the source is
 # newer. Files that cannot be converted are skipped with a diagnostic.
@@ -15,7 +16,6 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/preview-lib.sh"
 
 # Bump this when thumbnail generation changes so old cache files are not
 # reused.
@@ -233,10 +233,10 @@ while IFS= read -r -d '' f; do
 
     preview_path=""
     if [ "$preview_enabled" -eq 1 ]; then
-        pkey="$(preview_key "$f" "$PREVIEW_W" "$PREVIEW_H")"
-        pout="$PREVIEW_DIR/$pkey.jpg"
-        if [ -f "$pout" ] && [ ! "$f" -nt "$pout" ]; then
-            preview_path="$pout"
+        if ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
+            "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H")"; then
+            preview_path=""
+            echo "sync-thumbs.sh: failed to cache preview: $f" >&2
         fi
     fi
 

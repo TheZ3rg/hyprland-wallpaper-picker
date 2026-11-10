@@ -69,8 +69,8 @@ Singleton {
         /// expandDuration. 0 waits for the scroll to finish.
         property int expandOverlap: 250
 
-        /// Neighbours on each side to pre-generate after the selection
-        /// settles. 0 pre-generates only the focused wallpaper.
+        /// Neighbours on each side to retry when a preview is missing after
+        /// the scan. 0 retries only the focused wallpaper.
         property int prefetchRadius: 3
 
         /// Kept separate from thumbnails so the scan prune leaves it alone.

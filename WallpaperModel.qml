@@ -79,7 +79,7 @@ Item {
             String(Config.thumbnails.height),
             Config.extensions.join(","),
             String(Config.thumbnails.cornerRadius),
-            Config.previews.cacheDir,
+            Config.previews.enabled ? Config.previews.cacheDir : "",
             String(Config.previews.pixelWidth),
             String(Config.previews.pixelHeight)
         ]
