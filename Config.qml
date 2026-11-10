@@ -77,7 +77,8 @@ Singleton {
         /// "off" stops at the ends. "endless" wraps seamlessly, duplicating
         /// wallpapers when the folder is smaller than the window. "jump"
         /// wraps instantly from one end to the other without duplicates.
-        property string loopMode: "off"
+        // TODO: fix the "jump" mode
+        property string loopMode: "endless"
 
         /// Gap between tiles in pixels. Unlike the tile sizes, it does not
         /// scale with the screen or with the focused tile.
