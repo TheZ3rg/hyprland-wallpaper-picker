@@ -120,6 +120,7 @@ PanelWindow {
         items: []
         previewUrls: preview.urls
         previewBlend: preview.previewsEnabled
+            && !scrolling
             && preview.urls[currentItemPath] !== undefined
             ? 1
             : 0
