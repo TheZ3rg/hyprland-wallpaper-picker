@@ -60,6 +60,15 @@ Item {
     // True while a long scroll animates; the window follows `position`.
     property bool scrolling: false
 
+    // True during the final part of a long scroll, when the focused card is
+    // allowed to start widening before the scroll fully stops.
+    property bool scrollFinishing: false
+
+    // Start the widen this early, but never earlier than the widening itself.
+    readonly property int widenLead:
+        Math.max(0, Math.min(Config.previews.expandOverlap,
+                                Config.previews.expandDuration))
+
     // Fixed delegate slots. slotIndex[s] is the global item index rendered by
     // slot s; keeping it stable means a window shift only changes the slots
     // that enter or leave the window.
@@ -95,6 +104,14 @@ Item {
         updateWindow(true);
     }
 
+    function restartScrollTimers() {
+        finishTimer.restart();
+        if (root.widenLead > 0)
+            widenLeadTimer.restart();
+        else
+            widenLeadTimer.stop();
+    }
+
     /**
      * Animate to `index` over `duration` milliseconds.
      *
@@ -111,7 +128,7 @@ Item {
         const target = Math.max(0, Math.min(count - 1, index));
         if (target === currentIndex) {
             if (scrolling)
-                finishTimer.restart();
+                restartScrollTimers();
             return;
         }
 
@@ -130,14 +147,18 @@ Item {
         }
 
         activeScrollDuration = scrollDuration;
+        scrollFinishing = false;
         scrolling = true;
-        finishTimer.restart();
+        restartScrollTimers();
         currentIndex = target;
     }
 
     function cancelScroll() {
         if (finishTimer)
             finishTimer.stop();
+        if (widenLeadTimer)
+            widenLeadTimer.stop();
+        scrollFinishing = false;
         scrolling = false;
     }
 
@@ -145,6 +166,8 @@ Item {
         if (!scrolling)
             return;
 
+        widenLeadTimer.stop();
+        scrollFinishing = false;
         scrolling = false;
         animatePosition = false;
         position = currentIndex;
@@ -274,7 +297,8 @@ Item {
     onCurrentIndexChanged: {
         if (root.scrolling) {
             position = currentIndex;
-            finishTimer.restart();
+            root.scrollFinishing = false;
+            root.restartScrollTimers();
             return;
         }
 
@@ -325,6 +349,17 @@ Item {
         onTriggered: root.finishScroll()
     }
 
+    Timer {
+        id: widenLeadTimer
+
+        // Fires early enough for the widen to overlap the end of the scroll.
+        interval: Math.max(0, root.activeScrollDuration - root.widenLead)
+        onTriggered: {
+            if (root.scrolling)
+                root.scrollFinishing = true;
+        }
+    }
+
     function scaleForIndex(i) {
         if (!Config.strip.coverflowEnabled)
             return 1;
@@ -357,7 +392,13 @@ Item {
             const hasPreview = path !== ""
                 && root.previewUrls[path] !== undefined;
             const wideAspect = hasPreview ? root.focusedAspect : a;
-            const aspect = a + (wideAspect - a) * focus * root.previewBlend;
+
+            // During the overlap only the destination tile widens; otherwise
+            // every passing tile with a prefetched preview would grow.
+            const wideFocus = root.scrolling
+                ? (i === root.currentIndex ? focus : 0)
+                : focus;
+            const aspect = a + (wideAspect - a) * wideFocus * root.previewBlend;
 
             const h = baseHeight * s * heightFactor;
             const w = h * aspect;

@@ -58,6 +58,11 @@ Singleton {
         /// 0 makes it instant.
         property int expandDuration: 240
 
+        /// Start the widen this many milliseconds before a long scroll ends,
+        /// so the two animations overlap. The lead never exceeds
+        /// expandDuration. 0 waits for the scroll to finish.
+        property int expandOverlap: 250
+
         /// Neighbours on each side to pre-generate after the selection
         /// settles. 0 pre-generates only the focused wallpaper.
         property int prefetchRadius: 3
