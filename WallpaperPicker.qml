@@ -13,13 +13,40 @@ import Quickshell.Hyprland
 PanelWindow {
     id: root
 
-    visible: true
+    // Hidden until the focused monitor is known. Showing immediately would
+    // map the window on the fallback screen for a frame at startup.
+    visible: root._shown
 
-    // Bind to the focused monitor, with the first output as a fallback during
-    // startup or hotplug. Because this is a binding, the window follows focus
-    // if another monitor is focused while the picker is open.
-    screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name)
-        ?? Quickshell.screens[0]
+    readonly property var targetScreen: Hyprland.focusedMonitor
+        ? Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor.name)
+        : null
+
+    // The first output is only a hidden backing screen until the focused
+    // monitor resolves; it follows focus after that.
+    screen: root.targetScreen ?? Quickshell.screens[0]
+
+    property bool _shown: false
+
+    function scheduleShow() {
+        if (!root.targetScreen) {
+            root._shown = false;
+            return;
+        }
+        if (!root._shown)
+            showTimer.restart();
+    }
+
+    Timer {
+        id: showTimer
+        interval: 0
+        onTriggered: {
+            if (root.targetScreen)
+                root._shown = true;
+        }
+    }
+
+    onTargetScreenChanged: root.scheduleShow()
+    Component.onCompleted: root.scheduleShow()
 
     // Overlay: do not reserve space or shift other windows.
     exclusionMode: ExclusionMode.Ignore
