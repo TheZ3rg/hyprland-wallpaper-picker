@@ -16,9 +16,8 @@ not by the picker.
   folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
   thumbnail size, mode or corner radius regenerates it automatically.
-- The focused tile shows a wider, higher-resolution crop generated on demand
-  and cached separately from the strip thumbnails; nearby previews are
-  prefetched after the selection settles.
+- The focused tile shows a wider, higher-resolution crop generated and cached
+  during the scan, so it is available as soon as a wallpaper is focused.
 - Thumbnails are generated with ImageMagick 7; files that cannot be converted
   are skipped and reported.
 - Starts on the wallpaper awww is currently displaying.
@@ -102,7 +101,7 @@ documented there. The main groups are:
 
 - wallpaper folder and accepted extensions;
 - thumbnail generation, cache and fade-in;
-- focused preview crop, size, prefetch and expansion duration;
+- focused preview crop, size and expansion duration;
 - strip height, visible range, pixel spacing, coverflow/focused-tile scaling
   and selection/scroll animation durations;
 - overlay layer, background dim and informational messages;
@@ -125,7 +124,7 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   bars. Set it to `top` to keep bars that also use the overlay layer visible
   above the picker.
 - Focused previews are generated and cached during the scan, like thumbnails.
-  Missing or failed previews are retried on demand around the selection.
+  If a preview is missing or failed, that wallpaper simply does not widen.
 - The picker opens on the monitor that has focus at startup and follows focus
   changes while it is open.
 

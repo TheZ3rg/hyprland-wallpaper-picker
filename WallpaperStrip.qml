@@ -17,7 +17,7 @@ import QtQuick
 Item {
     id: root
 
-    // Flat list from WallpaperModel: { path, thumb, aspect }.
+    // Flat list from WallpaperModel: { path, thumb, aspect, preview }.
     property var items: []
 
     // Assigning this animates `position` to the new index.
@@ -79,12 +79,19 @@ Item {
     // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
-    // Path -> wider preview file URL, supplied by WallpaperPreview.
-    property var previewUrls: ({})
+    // Wider preview of the selected wallpaper, supplied by the scan manifest.
+    readonly property string currentItemPreview: {
+        const item = items[currentIndex];
+        return item ? (item.preview ?? "") : "";
+    }
 
-    // 0 = narrow strip crop, 1 = wider focused crop. The picker drives this
-    // when the focused tile's preview becomes available.
-    property real previewBlend: 0
+    // 0 = narrow strip crop, 1 = wider focused crop. Waits for long scrolls
+    // to finish (or their overlap window) and for a cached preview.
+    property real previewBlend: Config.previews.enabled
+        && (!scrolling || scrollFinishing)
+        && currentItemPreview !== ""
+        ? 1
+        : 0
     Behavior on previewBlend {
         NumberAnimation {
             duration: Math.max(0, Config.previews.expandDuration)
@@ -388,9 +395,7 @@ Item {
                 1 + (Config.strip.focusHeightScale - 1) * focus;
 
             const a = (items[i] && items[i].aspect) ? items[i].aspect : 0.7;
-            const path = items[i] ? items[i].path : "";
-            const hasPreview = path !== ""
-                && root.previewUrls[path] !== undefined;
+            const hasPreview = items[i] && items[i].preview !== "";
             const wideAspect = hasPreview ? root.focusedAspect : a;
 
             // During the overlap only the destination tile widens; otherwise
@@ -460,7 +465,7 @@ Item {
                 ? Math.max(0, 1 - Math.abs(cell.dataIndex - root.position))
                 : 0
             readonly property string previewUrl:
-                cell.entry ? (root.previewUrls[cell.entry.path] ?? "") : ""
+                cell.entry ? (cell.entry.preview ?? "") : ""
             readonly property bool previewActive:
                 cell.previewUrl !== "" && cell.focusWeight > 0.001
 

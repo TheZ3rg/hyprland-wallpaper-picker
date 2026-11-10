@@ -85,10 +85,6 @@ PanelWindow {
         mode: Config.search.mode
     }
 
-    WallpaperPreview {
-        id: preview
-    }
-
     SearchField {
         id: searchField
         // Above the status box, which may move out of its way.
@@ -118,12 +114,6 @@ PanelWindow {
         id: strip
         anchors.fill: parent
         items: []
-        previewUrls: preview.urls
-        previewBlend: preview.previewsEnabled
-            && (!scrolling || scrollFinishing)
-            && preview.urls[currentItemPath] !== undefined
-            ? 1
-            : 0
         onActivated: index => {
             // A click applies immediately and leaves the field, so later
             // typing does not silently change the query.
@@ -144,7 +134,6 @@ PanelWindow {
                 strip.scrollTo(i, Config.strip.scrollDuration);
         }
         root._initialSelectionDone = true;
-        root.schedulePreviews();
     }
 
     /**
@@ -180,8 +169,6 @@ PanelWindow {
             strip.scrollTo(index, scrollDuration);
         else
             strip.jumpTo(index);
-
-        root.schedulePreviews();
     }
 
     function handleQueryChanged() {
@@ -226,56 +213,9 @@ PanelWindow {
             searchField.deactivate();
     }
 
-    function schedulePreviews() {
-        if (Config.previews.enabled)
-            previewTimer.restart();
-    }
-
-    function seedPreviews() {
-        for (let i = 0; i < model.items.length; ++i) {
-            const item = model.items[i];
-            if (item.preview)
-                preview.seed(item.path, item.preview);
-        }
-    }
-
-    function prefetchPreviews() {
-        if (!Config.previews.enabled)
-            return;
-
-        // Reprioritise for the new selection. A generation already in flight
-        // is allowed to finish and stays cached.
-        preview.clearQueue();
-
-        const center = strip.currentIndex;
-        const radius = Math.max(0, Config.previews.prefetchRadius);
-        const focused = strip.items[center];
-        if (focused)
-            preview.request(focused.path);
-
-        for (let d = 1; d <= radius; ++d) {
-            const before = strip.items[center - d];
-            const after = strip.items[center + d];
-            if (before)
-                preview.request(before.path);
-            if (after)
-                preview.request(after.path);
-        }
-    }
-
-    Timer {
-        id: previewTimer
-        interval: 180
-        onTriggered: root.prefetchPreviews()
-    }
-
     Connections {
         target: model
-        function onItemsChanged() { root.seedPreviews() }
-        function onLoaded() {
-            root.applyInitialSelection();
-            root.seedPreviews();
-        }
+        function onLoaded() { root.applyInitialSelection() }
     }
 
     Connections {
@@ -296,7 +236,6 @@ PanelWindow {
 
     Connections {
         target: strip
-        function onCurrentIndexChanged() { root.schedulePreviews() }
         function onNavigated() { root._initialSelectionDone = true }
     }
 
