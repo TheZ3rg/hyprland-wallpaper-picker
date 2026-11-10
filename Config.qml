@@ -14,9 +14,6 @@ Singleton {
     property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/wallpapers"
 
     /// Lower-case extensions without a dot.
-    ///
-    /// GIFs work, but the first apply and thumbnail generation are slow, and
-    /// awww's cache can exceed 100 MB per GIF. Prefer static images.
     property var extensions: ["jpg", "jpeg", "png", "webp", "gif"]
 
     // ── Thumbnails and focused previews ───────────────────────
@@ -76,6 +73,9 @@ Singleton {
 
         /// Tiles farther than this many slots from the selection are unloaded.
         property int visibleRange: 24
+
+        /// Wrap navigation and the strip layout around the ends of the list.
+        property bool looped: false
 
         /// Gap between tiles in pixels. Unlike the tile sizes, it does not
         /// scale with the screen or with the focused tile.

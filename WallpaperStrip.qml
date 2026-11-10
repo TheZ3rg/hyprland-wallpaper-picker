@@ -13,6 +13,10 @@ import QtQuick
  * only reassigns the tiles entering and leaving it. The layout is
  * translation-invariant, so positioning the window locally gives the same
  * geometry as laying out the entire collection.
+ *
+ * In looped mode the window wraps around the list and slots may repeat
+ * wallpapers when the folder is smaller than the window, so the strip never
+ * shows an end.
  */
 Item {
     id: root
@@ -23,10 +27,15 @@ Item {
     // Assigning this animates `position` to the new index.
     property int currentIndex: 0
 
+    // Unwrapped target index. In looped mode it may leave 0..count-1;
+    // currentIndex remains the model index used by the rest of the picker.
+    property int _virtualIndex: 0
+
     signal activated(int index)
     signal navigated()
 
     readonly property int count: items.length
+    readonly property bool looped: Config.strip.looped
     readonly property real baseHeight: height * Config.strip.itemHeightRatio
     readonly property real gap: Config.strip.spacing
 
@@ -69,10 +78,13 @@ Item {
         Math.max(0, Math.min(Config.previews.expandOverlap,
                                 Config.previews.expandDuration))
 
-    // Fixed delegate slots. slotIndex[s] is the global item index rendered by
+    // Fixed delegate slots. slotIndex[s] is the window index rendered by
     // slot s; keeping it stable means a window shift only changes the slots
-    // that enter or leave the window.
-    readonly property int slotCount: Math.min(count, windowSize)
+    // that enter or leave the window. In looped mode the window is always
+    // full even when there are fewer wallpapers than slots.
+    readonly property int slotCount:
+        count === 0 ? 0
+        : (root.looped ? windowSize : Math.min(count, windowSize))
     property var slotIndex: []
 
     // URLs whose images have finished decoding. A tile that reuses a slot or
@@ -102,11 +114,47 @@ Item {
     readonly property real focusedAspect:
         Math.max(0.05, Config.previews.aspectRatio * Config.strip.focusWidthScale)
 
+    // Model index for a window index. Non-looped strips clamp; looped strips
+    // wrap around the list.
+    function itemIndexFor(virtualIndex) {
+        if (count === 0)
+            return -1;
+        if (!root.looped)
+            return Math.max(0, Math.min(count - 1, virtualIndex));
+        return ((virtualIndex % count) + count) % count;
+    }
+
+    function itemAt(virtualIndex) {
+        const i = root.itemIndexFor(virtualIndex);
+        return i >= 0 ? root.items[i] : null;
+    }
+
+    // Nearest window index for `modelIndex`, used by jumps and searches.
+    // In looped mode this picks the shorter way around the list.
+    function virtualForModel(modelIndex, fromPosition) {
+        const model = Math.max(0, Math.min(count - 1, modelIndex));
+        if (!root.looped || count === 0)
+            return model;
+
+        const base = Math.round(fromPosition);
+        const currentModel = root.itemIndexFor(base);
+        let delta = model - currentModel;
+
+        while (delta > count / 2)
+            delta -= count;
+        while (delta < -count / 2)
+            delta += count;
+
+        return base + delta;
+    }
+
     function jumpTo(index) {
         cancelScroll();
         animatePosition = false;
-        currentIndex = Math.max(0, Math.min(count - 1, index));
-        position = currentIndex;
+        const model = Math.max(0, Math.min(count - 1, index));
+        root._virtualIndex = root.virtualForModel(model, root.position);
+        root.currentIndex = model;
+        root.position = root._virtualIndex;
         animatePosition = true;
         updateWindow(true);
     }
@@ -132,16 +180,20 @@ Item {
         if (count === 0)
             return;
 
-        const target = Math.max(0, Math.min(count - 1, index));
-        if (target === currentIndex) {
+        const model = Math.max(0, Math.min(count - 1, index));
+        const target = root.virtualForModel(model, root.position);
+        if (target === root._virtualIndex) {
+            if (root.currentIndex !== model)
+                root.currentIndex = model;
             if (scrolling)
                 restartScrollTimers();
             return;
         }
 
-        const distance = Math.abs(target - currentIndex);
+        const distance = Math.abs(target - root._virtualIndex);
         if (distance <= jumpLimit) {
-            currentIndex = target;
+            root._virtualIndex = target;
+            root.currentIndex = model;
             return;
         }
 
@@ -149,7 +201,7 @@ Item {
             ? Config.strip.scrollDuration
             : duration;
         if (scrollDuration <= 0) {
-            jumpTo(target);
+            jumpTo(model);
             return;
         }
 
@@ -157,7 +209,8 @@ Item {
         scrollFinishing = false;
         scrolling = true;
         restartScrollTimers();
-        currentIndex = target;
+        root._virtualIndex = target;
+        root.currentIndex = model;
     }
 
     function cancelScroll() {
@@ -177,7 +230,7 @@ Item {
         scrollFinishing = false;
         scrolling = false;
         animatePosition = false;
-        position = currentIndex;
+        position = root._virtualIndex;
         animatePosition = true;
         updateWindow(true);
     }
@@ -201,14 +254,36 @@ Item {
     }
 
     function next() {
+        if (count === 0)
+            return;
+
+        if (root.looped && count > 1) {
+            root._virtualIndex++;
+            root.currentIndex = root.itemIndexFor(root._virtualIndex);
+            navigated();
+            return;
+        }
+
         if (currentIndex < count - 1) {
+            root._virtualIndex = currentIndex + 1;
             currentIndex++;
             navigated();
         }
     }
 
     function prev() {
+        if (count === 0)
+            return;
+
+        if (root.looped && count > 1) {
+            root._virtualIndex--;
+            root.currentIndex = root.itemIndexFor(root._virtualIndex);
+            navigated();
+            return;
+        }
+
         if (currentIndex > 0) {
+            root._virtualIndex = currentIndex - 1;
             currentIndex--;
             navigated();
         }
@@ -223,16 +298,25 @@ Item {
             return;
         }
 
-        const maxStart = Math.max(0, count - windowSize);
         const margin = Math.min(visibleRadius, Math.floor(windowSize / 3));
+        const target = root._virtualIndex;
         let start = windowStart;
 
-        if (force
-                || start > maxStart
-                || currentIndex < start + margin
-                || currentIndex > start + windowSize - 1 - margin) {
-            start = Math.max(0, Math.min(maxStart,
-                currentIndex - Math.floor(windowSize / 2)));
+        if (root.looped) {
+            if (force
+                    || target < start + margin
+                    || target > start + windowSize - 1 - margin) {
+                start = target - Math.floor(windowSize / 2);
+            }
+        } else {
+            const maxStart = Math.max(0, count - windowSize);
+            if (force
+                    || start > maxStart
+                    || target < start + margin
+                    || target > start + windowSize - 1 - margin) {
+                start = Math.max(0, Math.min(maxStart,
+                    target - Math.floor(windowSize / 2)));
+            }
         }
 
         if (start !== windowStart)
@@ -241,13 +325,22 @@ Item {
 
     // Keep the scrolling window centred on the animated position.
     function followScroll() {
-        if (count <= windowSize)
+        if (count === 0)
             return;
 
-        const maxStart = count - windowSize;
         const half = Math.floor(windowSize / 2);
-        const start = Math.max(0, Math.min(maxStart,
-            Math.round(position) - half));
+        let start;
+
+        if (root.looped) {
+            start = Math.round(position) - half;
+        } else {
+            if (count <= windowSize)
+                return;
+            const maxStart = count - windowSize;
+            start = Math.max(0, Math.min(maxStart,
+                Math.round(position) - half));
+        }
+
         if (start !== windowStart)
             windowStart = start;
     }
@@ -272,17 +365,18 @@ Item {
 
         for (let s = 0; s < n; ++s) {
             const g = slotIndex[s];
-            if (g >= start && g < end && used[g] !== true) {
+            if (g !== null && g !== undefined
+                    && g >= start && g < end && used[g] !== true) {
                 next[s] = g;
                 used[g] = true;
             } else {
-                next[s] = -1;
+                next[s] = null;
             }
         }
 
         let g = start;
         for (let s = 0; s < n; ++s) {
-            if (next[s] !== -1)
+            if (next[s] !== null)
                 continue;
             while (g < end && used[g] === true)
                 ++g;
@@ -302,8 +396,10 @@ Item {
     }
 
     onCurrentIndexChanged: {
+        const target = root.looped ? root._virtualIndex : root.currentIndex;
+
         if (root.scrolling) {
-            position = currentIndex;
+            position = target;
             root.scrollFinishing = false;
             root.restartScrollTimers();
             return;
@@ -311,12 +407,12 @@ Item {
 
         // A jump larger than the window margin cannot be animated through
         // tiles that are not instantiated.
-        if (Math.abs(position - currentIndex) > jumpLimit) {
+        if (Math.abs(position - target) > jumpLimit) {
             animatePosition = false;
-            position = currentIndex;
+            position = target;
             animatePosition = true;
         } else {
-            position = currentIndex;
+            position = target;
         }
         updateWindow(false);
     }
@@ -325,9 +421,15 @@ Item {
     onCountChanged: {
         if (count === 0) {
             cancelScroll();
+            root._virtualIndex = 0;
             currentIndex = 0;
-        } else if (currentIndex > count - 1) {
-            currentIndex = count - 1;
+        } else {
+            const model = Math.min(currentIndex, count - 1);
+            root._virtualIndex = root.looped
+                ? root.virtualForModel(model, root.position)
+                : model;
+            if (currentIndex !== model)
+                currentIndex = model;
         }
         updateWindow(false);
     }
@@ -394,14 +496,15 @@ Item {
             const heightFactor =
                 1 + (Config.strip.focusHeightScale - 1) * focus;
 
-            const a = (items[i] && items[i].aspect) ? items[i].aspect : 0.7;
-            const hasPreview = items[i] && items[i].preview !== "";
+            const item = root.itemAt(i);
+            const a = (item && item.aspect) ? item.aspect : 0.7;
+            const hasPreview = item && item.preview !== "";
             const wideAspect = hasPreview ? root.focusedAspect : a;
 
             // During the overlap only the destination tile widens; otherwise
-            // every passing tile with a prefetched preview would grow.
+            // every passing tile with a cached preview would grow.
             const wideFocus = root.scrolling
-                ? (i === root.currentIndex ? focus : 0)
+                ? (i === root._virtualIndex ? focus : 0)
                 : focus;
             const aspect = a + (wideAspect - a) * wideFocus * root.previewBlend;
 
@@ -439,10 +542,12 @@ Item {
 
             required property int index
 
-            readonly property int dataIndex: {
-                const g = root.slotIndex[index];
-                return g === undefined ? -1 : g;
-            }
+            readonly property var slot:
+                root.slotIndex[index] ?? null
+            readonly property bool hasSlot: cell.slot !== null
+            readonly property int virtualIndex: cell.hasSlot ? cell.slot : 0
+            readonly property int dataIndex:
+                cell.hasSlot ? root.itemIndexFor(cell.virtualIndex) : -1
             readonly property var entry:
                 (cell.dataIndex >= 0 && cell.dataIndex < root.count)
                     ? root.items[cell.dataIndex]
@@ -450,19 +555,19 @@ Item {
 
             // `m` is null until the slot is assigned or the layout is ready.
             readonly property var m: {
-                if (cell.dataIndex < root.windowStart)
+                if (!cell.hasSlot || cell.virtualIndex < root.windowStart)
                     return null;
-                return root.metrics[cell.dataIndex - root.windowStart] ?? null;
+                return root.metrics[cell.virtualIndex - root.windowStart] ?? null;
             }
-            readonly property real dist: cell.dataIndex >= 0
-                ? Math.abs(cell.dataIndex - root.position)
+            readonly property real dist: cell.hasSlot
+                ? Math.abs(cell.virtualIndex - root.position)
                 : 1e9
             readonly property bool shown: cell.m !== null
                 && cell.dist <= Config.strip.visibleRange
             readonly property string thumbUrl: cell.entry ? cell.entry.thumb : ""
 
-            readonly property real focusWeight: cell.dataIndex >= 0
-                ? Math.max(0, 1 - Math.abs(cell.dataIndex - root.position))
+            readonly property real focusWeight: cell.hasSlot
+                ? Math.max(0, 1 - Math.abs(cell.virtualIndex - root.position))
                 : 0
             readonly property string previewUrl:
                 cell.entry ? (cell.entry.preview ?? "") : ""

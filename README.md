@@ -10,6 +10,8 @@ not by the picker.
 ## Features
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
+- Optional looping strip (`strip.looped`): navigation and layout wrap around
+  the ends, so the strip never shows a start or finish.
 - Search by wallpaper name: jump to the best match while typing, or hide
   non-matching wallpapers (see `search.mode` in `Config.qml`).
 - Only a window of tiles around the selection is instantiated, so large
@@ -91,6 +93,9 @@ the picker. Search matches file names without their extension,
 case-insensitively, and ranks names starting with the query before names that
 merely contain it.
 
+With `strip.looped: true`, `Left` / `Right` wrap from the last wallpaper to the
+first and back.
+
 The picker closes after a successful apply by default; see `apply.closeOnApply`
 in `Config.qml`. If applying fails, it stays open and shows the error.
 
@@ -102,8 +107,8 @@ documented there. The main groups are:
 - wallpaper folder and accepted extensions;
 - thumbnail generation, cache and fade-in;
 - focused preview crop, size and expansion duration;
-- strip height, visible range, pixel spacing, coverflow/focused-tile scaling
-  and selection/scroll animation durations;
+- strip height, visible range, pixel spacing, looping, coverflow/focused-tile
+  scaling and selection/scroll animation durations;
 - overlay layer, background dim and informational messages;
 - search mode, field position, margin, opacity and animation duration;
 - awww apply transitions, resize, filter and close behaviour.
