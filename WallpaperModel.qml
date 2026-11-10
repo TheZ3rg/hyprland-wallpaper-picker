@@ -35,6 +35,12 @@ Item {
 
     readonly property string script: Quickshell.shellPath("scripts/sync-thumbs.sh")
 
+    // Focused preview size derived from the configured crop and tile scale.
+    readonly property int previewHeight: Math.max(1, Config.previews.height)
+    readonly property int previewWidth:
+        Math.max(1, Math.round(previewHeight * Config.previews.aspectRatio
+            * Config.strip.focusWidthScale))
+
     // Rows are buffered so `items` is assigned once per scan instead of
     // rebuilding the strip for every line.
     property var _buffer: []
@@ -80,8 +86,8 @@ Item {
             Config.extensions.join(","),
             String(Config.thumbnails.cornerRadius),
             Config.previews.enabled ? Config.previews.cacheDir : "",
-            String(Config.previews.pixelWidth),
-            String(Config.previews.pixelHeight)
+            String(root.previewWidth),
+            String(root.previewHeight)
         ]
 
         // Manifest row: <sourcePath> \t <thumbPath> \t <width> \t <height> \t <previewPath>
