@@ -1,17 +1,21 @@
 #!/usr/bin/env bash
 #
-# Usage: sync-thumbs.sh <wallpaperDir> <cacheDir> <cover|preserve> <w> <h> <ext,ext,...> [cornerRadius]
+# Usage: sync-thumbs.sh <wallpaperDir> <cacheDir> <cover|preserve> <w> <h> <ext,ext,...> [cornerRadius] [previewDir] [previewWidth] [previewHeight]
 #
 # Scans wallpaperDir (non-recursive), generates or reuses cached thumbnails,
 # and prints one tab-separated manifest row per wallpaper:
 #
-#     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>
+#     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>\t<previewPath>
 #
+# <previewPath> is empty unless a valid cached focused preview already exists.
 # ImageMagick 7 is required. Thumbnails are keyed by the source path,
 # generation options and cache version, and are regenerated when the source is
 # newer. Files that cannot be converted are skipped with a diagnostic.
 
 set -uo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/preview-lib.sh"
 
 # Bump this when thumbnail generation changes so old cache files are not
 # reused.
@@ -24,6 +28,16 @@ W="${4:-420}"
 H="${5:-640}"
 EXTS="${6:-jpg,jpeg,png,webp}"
 RADIUS="${7:-0}"
+PREVIEW_DIR="${8:-}"
+PREVIEW_W="${9:-}"
+PREVIEW_H="${10:-}"
+
+preview_enabled=0
+if [ -n "$PREVIEW_DIR" ] \
+    && [[ "$PREVIEW_W" =~ ^[1-9][0-9]*$ ]] \
+    && [[ "$PREVIEW_H" =~ ^[1-9][0-9]*$ ]]; then
+    preview_enabled=1
+fi
 
 if [ -z "$DIR" ] || [ -z "$CACHE" ]; then
     echo "sync-thumbs.sh: missing arguments" >&2
@@ -217,8 +231,17 @@ while IFS= read -r -d '' f; do
         fi
     fi
 
+    preview_path=""
+    if [ "$preview_enabled" -eq 1 ]; then
+        pkey="$(preview_key "$f" "$PREVIEW_W" "$PREVIEW_H")"
+        pout="$PREVIEW_DIR/$pkey.jpg"
+        if [ -f "$pout" ] && [ ! "$f" -nt "$pout" ]; then
+            preview_path="$pout"
+        fi
+    fi
+
     used_names["$key.$EXT"]=1
-    printf '%s\t%s\t%s\t%s\n' "$f" "$out" "$tw" "$th"
+    printf '%s\t%s\t%s\t%s\t%s\n' "$f" "$out" "$tw" "$th" "$preview_path"
 done < "$sorted"
 
 # Prune cache entries this scan did not produce. A failed scan returns before

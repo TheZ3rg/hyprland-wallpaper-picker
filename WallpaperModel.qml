@@ -16,7 +16,7 @@ Item {
     width: 0
     height: 0
 
-    // One object per wallpaper: { path, thumb, aspect }.
+    // One object per wallpaper: { path, thumb, aspect, preview }.
     property var items: []
 
     property bool scanning: false
@@ -78,10 +78,13 @@ Item {
             String(Config.thumbnails.width),
             String(Config.thumbnails.height),
             Config.extensions.join(","),
-            String(Config.thumbnails.cornerRadius)
+            String(Config.thumbnails.cornerRadius),
+            Config.previews.cacheDir,
+            String(Config.previews.pixelWidth),
+            String(Config.previews.pixelHeight)
         ]
 
-        // Manifest row: <sourcePath> \t <thumbPath> \t <width> \t <height>
+        // Manifest row: <sourcePath> \t <thumbPath> \t <width> \t <height> \t <previewPath>
         stdout: SplitParser {
             onRead: line => {
                 const parts = line.split("\t");
@@ -95,10 +98,13 @@ Item {
                 if (!(w > 0) || !(h > 0))
                     return;
 
+                const preview = parts.length > 4 ? parts[4] : "";
+
                 root._buffer.push({
                     path: parts[0],
                     thumb: root.toFileUrl(parts[1]),
-                    aspect: w / h
+                    aspect: w / h,
+                    preview: preview !== "" ? root.toFileUrl(preview) : ""
                 });
             }
         }

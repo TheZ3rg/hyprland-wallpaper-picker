@@ -54,6 +54,12 @@ Singleton {
         /// at least as tall as the focused card to avoid upscaling.
         property int height: 1000
 
+        /// Computed preview size shared by the scanner and the generator.
+        readonly property int pixelHeight: Math.max(1, height)
+        readonly property int pixelWidth:
+            Math.max(1, Math.round(pixelHeight * aspectRatio
+                * root.strip.focusWidthScale))
+
         /// Duration of the focused card's widening, in milliseconds;
         /// 0 makes it instant.
         property int expandDuration: 240

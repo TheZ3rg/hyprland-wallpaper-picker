@@ -231,6 +231,14 @@ PanelWindow {
             previewTimer.restart();
     }
 
+    function seedPreviews() {
+        for (let i = 0; i < model.items.length; ++i) {
+            const item = model.items[i];
+            if (item.preview)
+                preview.seed(item.path, item.preview);
+        }
+    }
+
     function prefetchPreviews() {
         if (!Config.previews.enabled)
             return;
@@ -263,7 +271,11 @@ PanelWindow {
 
     Connections {
         target: model
-        function onLoaded() { root.applyInitialSelection() }
+        function onItemsChanged() { root.seedPreviews() }
+        function onLoaded() {
+            root.applyInitialSelection();
+            root.seedPreviews();
+        }
     }
 
     Connections {

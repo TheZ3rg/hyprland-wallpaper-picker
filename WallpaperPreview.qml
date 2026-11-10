@@ -34,13 +34,8 @@ Item {
 
     readonly property bool previewsEnabled: Config.previews.enabled
 
-    // The focused card aspect and the preview crop must match so the image
-    // fills the card without extra cropping.
-    readonly property real aspectRatio:
-        Math.max(0.05, Config.previews.aspectRatio * Config.strip.focusWidthScale)
-    readonly property int previewHeight: Math.max(1, Config.previews.height)
-    readonly property int previewWidth:
-        Math.max(1, Math.round(root.previewHeight * root.aspectRatio))
+    readonly property int previewHeight: Config.previews.pixelHeight
+    readonly property int previewWidth: Config.previews.pixelWidth
     readonly property string configKey:
         root.previewWidth + "x" + root.previewHeight
 
@@ -49,6 +44,16 @@ Item {
 
     function isReady(path) {
         return root.urls[path] !== undefined;
+    }
+
+    // Add a preview path reported by the scan. `url` is already a file URL.
+    function seed(path, url) {
+        if (!path || !url || root.isReady(path))
+            return;
+
+        const next = Object.assign({}, root.urls);
+        next[path] = url;
+        root.urls = next;
     }
 
     function request(path) {

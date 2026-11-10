@@ -9,8 +9,8 @@
 
 set -uo pipefail
 
-# Bump this when preview generation changes so old previews are not reused.
-PREVIEW_VERSION=1
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/preview-lib.sh"
 
 SRC="${1:-}"
 CACHE="${2:-}"
@@ -42,8 +42,7 @@ mkdir -p -- "$CACHE" || {
     exit 1
 }
 
-key="$(printf '%s' "v${PREVIEW_VERSION}|$SRC|cover|${W}x${H}|preview" | md5sum)"
-key="${key%% *}"
+key="$(preview_key "$SRC" "$W" "$H")"
 out="$CACHE/$key.jpg"
 
 if [ ! -f "$out" ] || [ "$SRC" -nt "$out" ]; then
