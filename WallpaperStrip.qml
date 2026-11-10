@@ -14,9 +14,9 @@ import QtQuick
  * translation-invariant, so positioning the window locally gives the same
  * geometry as laying out the entire collection.
  *
- * In looped mode the window wraps around the list and slots may repeat
- * wallpapers when the folder is smaller than the window, so the strip never
- * shows an end.
+ * In looped mode the window wraps around the list when the collection is at
+ * least as large as the window. Smaller collections are laid out once and
+ * only the selection wraps, so no wallpaper is duplicated.
  */
 Item {
     id: root
@@ -36,6 +36,10 @@ Item {
 
     readonly property int count: items.length
     readonly property bool looped: Config.strip.looped
+
+    // The virtual (seamless) window is only possible without duplicate tiles
+    // when the list is at least as large as the window.
+    readonly property bool circularLayout: root.looped && count >= windowSize
     readonly property real baseHeight: height * Config.strip.itemHeightRatio
     readonly property real gap: Config.strip.spacing
 
@@ -80,11 +84,9 @@ Item {
 
     // Fixed delegate slots. slotIndex[s] is the window index rendered by
     // slot s; keeping it stable means a window shift only changes the slots
-    // that enter or leave the window. In looped mode the window is always
-    // full even when there are fewer wallpapers than slots.
+    // that enter or leave the window.
     readonly property int slotCount:
-        count === 0 ? 0
-        : (root.looped ? windowSize : Math.min(count, windowSize))
+        count === 0 ? 0 : Math.min(count, windowSize)
     property var slotIndex: []
 
     // URLs whose images have finished decoding. A tile that reuses a slot or
@@ -119,7 +121,7 @@ Item {
     function itemIndexFor(virtualIndex) {
         if (count === 0)
             return -1;
-        if (!root.looped)
+        if (!root.circularLayout)
             return Math.max(0, Math.min(count - 1, virtualIndex));
         return ((virtualIndex % count) + count) % count;
     }
@@ -133,7 +135,7 @@ Item {
     // In looped mode this picks the shorter way around the list.
     function virtualForModel(modelIndex, fromPosition) {
         const model = Math.max(0, Math.min(count - 1, modelIndex));
-        if (!root.looped || count === 0)
+        if (!root.circularLayout || count === 0)
             return model;
 
         const base = Math.round(fromPosition);
@@ -257,9 +259,16 @@ Item {
         if (count === 0)
             return;
 
-        if (root.looped && count > 1) {
+        if (root.circularLayout && count > 1) {
             root._virtualIndex++;
             root.currentIndex = root.itemIndexFor(root._virtualIndex);
+            navigated();
+            return;
+        }
+
+        if (root.looped && count > 1) {
+            root.currentIndex = (root.currentIndex + 1) % count;
+            root._virtualIndex = root.currentIndex;
             navigated();
             return;
         }
@@ -275,9 +284,16 @@ Item {
         if (count === 0)
             return;
 
-        if (root.looped && count > 1) {
+        if (root.circularLayout && count > 1) {
             root._virtualIndex--;
             root.currentIndex = root.itemIndexFor(root._virtualIndex);
+            navigated();
+            return;
+        }
+
+        if (root.looped && count > 1) {
+            root.currentIndex = (root.currentIndex - 1 + count) % count;
+            root._virtualIndex = root.currentIndex;
             navigated();
             return;
         }
@@ -299,10 +315,10 @@ Item {
         }
 
         const margin = Math.min(visibleRadius, Math.floor(windowSize / 3));
-        const target = root._virtualIndex;
+        const target = root.circularLayout ? root._virtualIndex : root.currentIndex;
         let start = windowStart;
 
-        if (root.looped) {
+        if (root.circularLayout) {
             if (force
                     || target < start + margin
                     || target > start + windowSize - 1 - margin) {
@@ -331,7 +347,7 @@ Item {
         const half = Math.floor(windowSize / 2);
         let start;
 
-        if (root.looped) {
+        if (root.circularLayout) {
             start = Math.round(position) - half;
         } else {
             if (count <= windowSize)
@@ -396,7 +412,9 @@ Item {
     }
 
     onCurrentIndexChanged: {
-        const target = root.looped ? root._virtualIndex : root.currentIndex;
+        const target = root.circularLayout
+            ? root._virtualIndex
+            : root.currentIndex;
 
         if (root.scrolling) {
             position = target;
@@ -405,9 +423,10 @@ Item {
             return;
         }
 
-        // A jump larger than the window margin cannot be animated through
-        // tiles that are not instantiated.
-        if (Math.abs(position - target) > jumpLimit) {
+        // A full window instantiates every tile, so even long moves can
+        // animate; a partial circular window cannot animate past its edge.
+        const covered = root.slotCount >= root.count;
+        if (!covered && Math.abs(position - target) > jumpLimit) {
             animatePosition = false;
             position = target;
             animatePosition = true;
@@ -425,7 +444,7 @@ Item {
             currentIndex = 0;
         } else {
             const model = Math.min(currentIndex, count - 1);
-            root._virtualIndex = root.looped
+            root._virtualIndex = root.circularLayout
                 ? root.virtualForModel(model, root.position)
                 : model;
             if (currentIndex !== model)
@@ -436,6 +455,23 @@ Item {
 
     onSlotCountChanged: refreshSlots()
     onWindowStartChanged: refreshSlots()
+
+    // Crossing the circular/finite threshold changes how indices map, so
+    // re-anchor and recentre instead of leaving the old window in place.
+    onCircularLayoutChanged: {
+        if (count === 0)
+            return;
+
+        root.cancelScroll();
+        root._virtualIndex = root.circularLayout
+            ? root.virtualForModel(root.currentIndex, root.position)
+            : root.currentIndex;
+        root.animatePosition = false;
+        root.position = root._virtualIndex;
+        root.animatePosition = true;
+        root.updateWindow(true);
+        root.refreshSlots();
+    }
 
     // Replacing the list (initial load, filtered results) must recentre the
     // window; the old windowStart may point past the new end.

@@ -74,7 +74,8 @@ Singleton {
         /// Tiles farther than this many slots from the selection are unloaded.
         property int visibleRange: 24
 
-        /// Wrap navigation and the strip layout around the ends of the list.
+        /// Wrap navigation. The layout is also seamless when the folder is at
+        /// least as large as the window; smaller folders are shown once.
         property bool looped: false
 
         /// Gap between tiles in pixels. Unlike the tile sizes, it does not
