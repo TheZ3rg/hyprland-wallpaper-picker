@@ -10,9 +10,9 @@ not by the picker.
 ## Features
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
-- Optional looping strip (`strip.looped`): navigation wraps. A seamless,
-  endless row is used when the folder is large enough to fill the window;
-  smaller folders are shown once.
+- Optional looping (`strip.loopMode`): `endless` keeps the row continuous and
+  repeats wallpapers when needed; `jump` wraps instantly between the ends
+  without duplicates; `off` stops at the ends.
 - Search by wallpaper name: jump to the best match while typing, or hide
   non-matching wallpapers (see `search.mode` in `Config.qml`).
 - Only a window of tiles around the selection is instantiated, so large
@@ -94,10 +94,9 @@ the picker. Search matches file names without their extension,
 case-insensitively, and ranks names starting with the query before names that
 merely contain it.
 
-With `strip.looped: true`, `Left` / `Right` wrap from the last wallpaper to the
-first and back. The row itself is seamless only when the folder is at least as
-large as the visible window; smaller folders are shown once and only the
-selection wraps.
+`strip.loopMode` selects how the ends behave: `endless` wraps seamlessly,
+repeating wallpapers if the folder is smaller than the window; `jump` wraps
+instantly between the ends without duplicates; `off` stops at the ends.
 
 The picker closes after a successful apply by default; see `apply.closeOnApply`
 in `Config.qml`. If applying fails, it stays open and shows the error.

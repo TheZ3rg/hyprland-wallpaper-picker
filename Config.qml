@@ -72,11 +72,12 @@ Singleton {
         property real itemHeightRatio: 0.28
 
         /// Tiles farther than this many slots from the selection are unloaded.
-        property int visibleRange: 24
+        property int visibleRange: 30
 
-        /// Wrap navigation. The layout is also seamless when the folder is at
-        /// least as large as the window; smaller folders are shown once.
-        property bool looped: false
+        /// "off" stops at the ends. "endless" wraps seamlessly, duplicating
+        /// wallpapers when the folder is smaller than the window. "jump"
+        /// wraps instantly from one end to the other without duplicates.
+        property string loopMode: "off"
 
         /// Gap between tiles in pixels. Unlike the tile sizes, it does not
         /// scale with the screen or with the focused tile.
