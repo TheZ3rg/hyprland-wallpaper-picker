@@ -625,12 +625,25 @@ Item {
                 : 0
             readonly property string previewUrl:
                 cell.entry ? (cell.entry.preview ?? "") : ""
+            readonly property bool animatedPreview:
+                cell.entry ? (cell.entry.animated === true) : false
             readonly property bool previewActive:
                 cell.previewUrl !== "" && cell.focusWeight > 0.001
+
+            // Animated clips are decoded only after the row stops moving, so
+            // fast scrolling does not load a clip for every passing tile.
+            readonly property bool livePreviewActive:
+                cell.animatedPreview && cell.previewActive && !root.scrolling
+
+            // Keep the first frame visible while a clip loads.
+            readonly property bool staticPreviewActive:
+                cell.previewActive && (!cell.animatedPreview
+                    || !(cell.livePreviewActive && cell.livePreviewLoaded))
 
             // True once the preview image has decoded. The base thumbnail is
             // hidden then, so the two crops never overlap visually.
             property bool previewLoaded: false
+            property bool livePreviewLoaded: false
 
             // Preload tiles just outside the viewport while scrolling, so
             // they have a chance to decode before becoming visible.
@@ -682,21 +695,42 @@ Item {
             }
 
             // Wider, higher-resolution crop shown once the focused tile's
-            // preview is ready. It stays opaque; the widening animation
-            // reveals more of it instead of cross-fading over the thumbnail.
+            // preview is ready. For animated wallpapers this is the first
+            // frame of the clip until the clip itself is loaded. It stays
+            // opaque; the widening animation reveals more of it instead of
+            // cross-fading over the thumbnail.
             Image {
                 id: previewImage
 
                 anchors.fill: parent
-                source: cell.previewActive ? cell.previewUrl : ""
+                source: cell.staticPreviewActive ? cell.previewUrl : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
                 smooth: true
-                opacity: (cell.previewActive && cell.previewLoaded) ? 1 : 0
+                opacity: (cell.staticPreviewActive && cell.previewLoaded) ? 1 : 0
 
                 onSourceChanged: cell.previewLoaded = false
                 onStatusChanged: cell.previewLoaded = (status === Image.Ready)
+            }
+
+            // Muted looping clip for a focused video or GIF. It replaces the
+            // static first frame once decoded and pauses as soon as the tile
+            // loses focus.
+            AnimatedImage {
+                id: livePreviewImage
+
+                anchors.fill: parent
+                source: cell.livePreviewActive ? cell.previewUrl : ""
+                fillMode: Image.PreserveAspectCrop
+                asynchronous: true
+                cache: false
+                smooth: true
+                paused: !cell.livePreviewActive
+                opacity: (cell.livePreviewActive && cell.livePreviewLoaded) ? 1 : 0
+
+                onSourceChanged: cell.livePreviewLoaded = false
+                onStatusChanged: cell.livePreviewLoaded = (status === Image.Ready)
             }
 
             // A faint outline keeps dark wallpapers distinguishable.
@@ -708,6 +742,32 @@ Item {
                 color: "transparent"
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.10)
+            }
+
+            // Marks wallpapers that animate on the desktop: videos and GIFs.
+            Rectangle {
+                id: liveBadge
+
+                visible: Config.live.showBadge && cell.entry
+                    && cell.entry.live === true && cell.width >= 56
+                anchors.left: parent.left
+                anchors.bottom: parent.bottom
+                anchors.margins: 6
+                width: liveBadgeLabel.implicitWidth + 10
+                height: liveBadgeLabel.implicitHeight + 4
+                radius: 4
+                color: Qt.rgba(0, 0, 0, 0.65)
+                border.width: 1
+                border.color: Qt.rgba(1, 1, 1, 0.15)
+
+                Text {
+                    id: liveBadgeLabel
+                    anchors.centerIn: parent
+                    text: "LIVE"
+                    color: "white"
+                    font.pixelSize: 10
+                    font.bold: true
+                }
             }
 
             MouseArea {
