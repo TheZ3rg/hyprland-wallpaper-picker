@@ -72,7 +72,6 @@ if ! [[ "$POSTER_SEEK" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
     exit 2
 fi
 
-
 if [ -z "$DIR" ] || [ -z "$CACHE" ]; then
     echo "sync-thumbs.sh: missing arguments" >&2
     exit 2
@@ -134,7 +133,6 @@ fi
 
 HAS_FFMPEG=0
 command -v ffmpeg >/dev/null 2>&1 && HAS_FFMPEG=1
-
 
 # Rounded corners need an alpha channel, so those thumbnails must be PNG.
 if [ "$RADIUS" -gt 0 ]; then

@@ -21,7 +21,8 @@ import QtQuick
 Item {
     id: root
 
-    // Flat list from WallpaperModel: { path, thumb, aspect, preview }.
+    // Flat list from WallpaperModel:
+    // { path, thumb, aspect, preview, live, video, animated }.
     property var items: []
 
     // Assigning this animates `position` to the new index.

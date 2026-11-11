@@ -20,9 +20,6 @@ Item {
     // Empty while nothing is displayed or the source is unknown.
     property string currentPath: ""
 
-    // True while the active wallpaper is a video played by mpvpaper.
-    property bool currentLive: false
-
     property bool applying: false
 
     // True while the in-flight apply is a video.
@@ -34,7 +31,7 @@ Item {
     property string error: ""
 
     signal queried()
-    signal applied(string path, bool live)
+    signal applied(string path)
     signal applyFailed(string message)
 
     readonly property string applyScript: Quickshell.shellPath("scripts/apply.sh")
@@ -46,13 +43,11 @@ Item {
     property string _applyErr: ""
     property bool _applyStarted: false
 
-    property string _queryKind: ""
     property string _queryPath: ""
 
     function refresh() {
         if (queryProc.running)
             return;
-        root._queryKind = "";
         root._queryPath = "";
         root.error = "";
         queryProc.ok = false;
@@ -174,7 +169,6 @@ Item {
                 const tab = line.indexOf("\t");
                 if (tab < 0)
                     return;
-                root._queryKind = line.slice(0, tab);
                 root._queryPath = line.slice(tab + 1);
             }
         }
@@ -192,7 +186,6 @@ Item {
             if (!queryProc.ok)
                 return;
             root.currentPath = root._queryPath;
-            root.currentLive = root._queryKind === "video";
             root.queryDone = true;
             root.queried();
         }
@@ -258,8 +251,7 @@ Item {
 
             root.error = "";
             root.currentPath = path;
-            root.currentLive = live;
-            root.applied(path, live);
+            root.applied(path);
             // The daemon updates its state asynchronously, after the command
             // exits.
             refreshTimer.restart();

@@ -153,8 +153,9 @@ PanelWindow {
         if (root._initialSelectionDone || !model.ready || !backend.queryDone)
             return;
 
-        // Start on the wallpaper the backend is already showing. indexOfPath returns
-        // -1 when that file is outside the current list, so index 0 stays.
+        // Start on the wallpaper the backend is already showing.
+        // indexOfPath returns -1 when that file is outside the current list,
+        // so index 0 stays.
         if (backend.currentPath !== "") {
             const i = strip.indexOfPath(backend.currentPath);
             if (i >= 0)
@@ -255,7 +256,7 @@ PanelWindow {
     Connections {
         target: backend
         function onQueried() { root.applyInitialSelection() }
-        function onApplied(path, live) {
+        function onApplied(path) {
             if (Config.apply.closeOnApply)
                 Qt.quit();
         }
