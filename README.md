@@ -133,8 +133,8 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
 ## Notes
 
-- Errors from the scanner, wallpaper queries, `awww img`, `mpvpaper` and the
-  preview generators are shown at the bottom of the overlay.
+- Errors from the scanner, wallpaper queries, `awww img` and `mpvpaper` are
+  shown at the bottom of the overlay.
 - ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
   or a file that cannot be converted is reported in the overlay.
 - Videos are played with mpvpaper on the `bottom` layer by default, above
