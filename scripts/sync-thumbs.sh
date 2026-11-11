@@ -23,9 +23,9 @@ set -uo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/video-lib.sh"
 
-# Bump this when thumbnail generation changes so old cache files are not
-# reused.
-CACHE_VERSION=2
+# Bump this when image thumbnail generation changes so old cache files are
+# not reused. Video thumbnails add the poster seek to their key instead.
+CACHE_VERSION=1
 
 DIR="${1:-}"
 CACHE="${2:-}"
