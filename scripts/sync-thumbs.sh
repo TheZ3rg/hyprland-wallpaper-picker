@@ -134,6 +134,16 @@ fi
 HAS_FFMPEG=0
 command -v ffmpeg >/dev/null 2>&1 && HAS_FFMPEG=1
 
+# A build without the animation encoder would make every clip fail; fall back
+# to static focused crops once instead of retrying per wallpaper.
+if [ "$animated_enabled" -eq 1 ] && [ "$HAS_FFMPEG" -eq 1 ]; then
+    if ! ffmpeg -hide_banner -encoders 2>/dev/null \
+            | grep 'libwebp_anim' >/dev/null; then
+        echo "sync-thumbs.sh: ffmpeg has no WebP animation encoder; using static previews" >&2
+        animated_enabled=0
+    fi
+fi
+
 # Rounded corners need an alpha channel, so those thumbnails must be PNG.
 if [ "$RADIUS" -gt 0 ]; then
     EXT="png"
