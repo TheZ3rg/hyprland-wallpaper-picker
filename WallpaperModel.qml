@@ -16,7 +16,8 @@ Item {
     width: 0
     height: 0
 
-    // One object per wallpaper: { path, thumb, aspect, preview }.
+    // One object per wallpaper:
+    // { path, thumb, aspect, preview, live, video, animated }.
     property var items: []
 
     property bool scanning: false
@@ -40,6 +41,16 @@ Item {
     readonly property int previewWidth:
         Math.max(1, Math.round(previewHeight * Config.previews.aspectRatio
             * Config.strip.focusWidthScale))
+
+    // Animated clips are smaller than static focused previews; their height
+    // follows the same focused crop aspect.
+    readonly property real focusedAspect:
+        Math.max(0.05, Config.previews.aspectRatio
+            * Config.strip.focusWidthScale)
+    readonly property int livePreviewWidth:
+        Math.max(1, Config.live.previews.width)
+    readonly property int livePreviewHeight:
+        Math.max(1, Math.round(livePreviewWidth / focusedAspect))
 
     // Rows are buffered so `items` is assigned once per scan instead of
     // rebuilding the strip for every line.
@@ -87,10 +98,20 @@ Item {
             String(Config.thumbnails.cornerRadius),
             Config.previews.enabled ? Config.previews.cacheDir : "",
             String(root.previewWidth),
-            String(root.previewHeight)
+            String(root.previewHeight),
+            Config.live.enabled ? Config.live.extensions.join(",") : "",
+            (Config.live.previews.enabled && Config.previews.enabled) ? "1" : "0",
+            String(root.livePreviewWidth),
+            String(root.livePreviewHeight),
+            String(Config.live.previews.duration),
+            String(Config.live.previews.fps),
+            String(Config.live.previews.quality),
+            String(Config.live.posterSeek)
         ]
 
-        // Manifest row: <sourcePath> \t <thumbPath> \t <width> \t <height> \t <previewPath>
+        // Manifest row:
+        // <sourcePath> \t <thumbPath> \t <width> \t <height> \t <previewPath>
+        // \t <kind> \t <animated>
         stdout: SplitParser {
             onRead: line => {
                 const parts = line.split("\t");
@@ -105,12 +126,20 @@ Item {
                     return;
 
                 const preview = parts.length > 4 ? parts[4] : "";
+                const kind = parts.length > 5 ? parts[5] : "image";
+                const animated = parts.length > 6 && parts[6] === "1";
 
                 root._buffer.push({
                     path: parts[0],
                     thumb: root.toFileUrl(parts[1]),
                     aspect: w / h,
-                    preview: preview !== "" ? root.toFileUrl(preview) : ""
+                    preview: preview !== "" ? root.toFileUrl(preview) : "",
+                    // Animated on the desktop: video or GIF.
+                    live: kind === "video" || kind === "gif",
+                    // Played by mpvpaper instead of awww.
+                    video: kind === "video",
+                    // The focused preview is an animated clip.
+                    animated: animated
                 });
             }
         }

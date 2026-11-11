@@ -282,7 +282,7 @@ PanelWindow {
             return;
         }
 
-        backend.apply(item.path, item.live === true);
+        backend.apply(item.path, item.video === true);
     }
 
     // Status shown at the bottom of the overlay. Errors take priority over
