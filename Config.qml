@@ -66,7 +66,7 @@ Singleton {
             /// aspect (previews.aspectRatio * strip.focusWidthScale).
             property int width: 420
 
-            /// WebP encoder quality, 0..100.
+            /// WebP encoder quality, 1..100.
             property int quality: 60
         }
     }

@@ -41,7 +41,7 @@ not by the picker.
 - Hyprland (layer-shell support)
 - Quickshell (`qs`)
 - awww, including `awww-daemon`
-- mpvpaper and mpv, for video wallpapers
+- mpvpaper (with its libmpv dependency), for video wallpapers
 - ffmpeg with the WebP animation encoder, for video posters and live previews
 - bash, coreutils, findutils, procps-ng and util-linux
 - ImageMagick 7 (`magick`)
@@ -148,10 +148,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   with many videos makes the first scan noticeably longer; the result is
   cached. Set `live.previews.enabled` to `false` to skip clip generation and
   use a static focused crop instead.
-- Animated previews are muted 2.5-second WebP clips and are decoded only while
-  a tile is focused and the strip is not moving. Long or high-frame-rate clips
-  use more memory, so keep `live.previews.duration`, `fps` and `width`
-  moderate on low-memory machines.
+- Animated previews are muted 2.5-second WebP clips by default and are
+  decoded only while a tile is focused and the strip is not moving. Long or
+  high-frame-rate clips use more memory, so keep `live.previews.duration`,
+  `fps` and `width` moderate on low-memory machines.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folder
