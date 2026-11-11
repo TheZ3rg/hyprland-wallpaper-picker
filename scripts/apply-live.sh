@@ -110,7 +110,7 @@ done
 sleep 0.2
 
 if [ -z "$(live_pids)" ]; then
-    detail="$(tail -n 3 "$LOG" 2>/dev/null)"
+    detail="$(tail -n 3 "$LOG" 2>/dev/null | tr '\n' ' ')"
     if [ -n "$detail" ]; then
         printf 'mpvpaper failed: %s\n' "$detail" >&2
     else
