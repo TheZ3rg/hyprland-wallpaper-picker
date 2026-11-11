@@ -105,7 +105,7 @@ Item {
         const a = Config.live;
         const args = ["bash", root.applyLiveScript, path,
                       "--layer", liveLayer(a.layer),
-                      "--mpv-options", liveOptions()];
+                      "--mpv-options", String(a.mpvOptions ?? "").trim()];
 
         if (a.pauseWhenHidden) {
             args.push("--auto-pause");
@@ -114,11 +114,6 @@ Item {
                 args.push("--auto-mode", mode);
         }
         return args;
-    }
-
-    function liveOptions() {
-        const extra = String(Config.live.mpvOptions ?? "").trim();
-        return extra === "" ? "no-audio loop" : "no-audio loop " + extra;
     }
 
     function liveLayer(v) {
