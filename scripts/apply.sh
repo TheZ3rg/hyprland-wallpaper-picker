@@ -2,8 +2,9 @@
 #
 # Usage: apply.sh <image> [awww img options...]
 #
-# Waits for the awww daemon, then forwards the image and options to `awww img`.
-# The daemon owns the active image; nothing is persisted here.
+# Stops mpvpaper, waits for the awww daemon, then forwards the image and
+# options to `awww img`. The daemon owns the active image; nothing is
+# persisted here.
 
 set -euo pipefail
 
@@ -16,6 +17,11 @@ shift
 }
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/live-lib.sh"
+
+# A running video would keep covering the image.
+stop_live
+
 bash "$SCRIPT_DIR/ensure-awww-daemon.sh"
 
 awww img "$IMG" "$@"

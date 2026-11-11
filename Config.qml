@@ -13,8 +13,63 @@ Singleton {
     /// absolute path; `~` is not expanded.
     property string wallpaperDir: Quickshell.env("HOME") + "/Pictures/wallpapers"
 
-    /// Lower-case extensions without a dot.
+    /// Lower-case extensions without a dot. GIFs are animated on the desktop
+    /// by awww and also get animated previews in the picker.
     property var extensions: ["jpg", "jpeg", "png", "webp", "gif"]
+
+    // ── Live wallpapers ───────────────────────────────────────
+
+    /// Video wallpapers are played by mpvpaper; images and GIFs keep using
+    /// awww. Disable this to scan and apply only still wallpapers.
+    property QtObject live: QtObject {
+        property bool enabled: true
+
+        /// Lower-case video extensions without a dot.
+        property var extensions: ["mp4", "webm", "mkv", "mov", "m4v"]
+
+        /// Seconds into the video used for its still thumbnail. Falls back to
+        /// the first frame when the video is shorter.
+        property real posterSeek: 1.0
+
+        /// Show a LIVE badge on tiles whose wallpaper animates on the desktop.
+        property bool showBadge: true
+
+        /// Layer-shell layer for mpvpaper. "bottom" sits above awww's
+        /// background surface and below normal windows. Unknown values fall
+        /// back to "background".
+        property string layer: "bottom"
+
+        /// Extra mpv options appended to "no-audio loop". For example
+        /// "hwdec=auto-safe" enables hardware decoding.
+        property string mpvOptions: ""
+
+        /// Pause the video while a fullscreen window hides it (mpvpaper
+        /// --auto-pause). Reduces CPU use.
+        property bool pauseWhenHidden: false
+
+        /// Also pause when a fullscreen or maximized window is open: ""
+        /// disables it, "full" or "max" only apply with pauseWhenHidden.
+        property string autoPauseMode: ""
+
+        /// Short muted clips shown in the focused tile. When disabled, videos
+        /// and GIFs still get a static focused crop during the scan.
+        property QtObject previews: QtObject {
+            property bool enabled: true
+
+            /// Clip length in milliseconds.
+            property int duration: 2500
+
+            /// Clip frame rate.
+            property int fps: 12
+
+            /// Clip width in pixels; the height follows the focused crop
+            /// aspect (previews.aspectRatio * strip.focusWidthScale).
+            property int width: 420
+
+            /// WebP encoder quality, 0..100.
+            property int quality: 60
+        }
+    }
 
     // ── Thumbnails and focused previews ───────────────────────
 

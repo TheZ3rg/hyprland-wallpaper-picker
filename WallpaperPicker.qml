@@ -97,8 +97,8 @@ PanelWindow {
         }
     }
 
-    AwwwBackend {
-        id: awww
+    WallpaperBackend {
+        id: backend
     }
 
     WallpaperModel {
@@ -150,13 +150,13 @@ PanelWindow {
     }
 
     function applyInitialSelection() {
-        if (root._initialSelectionDone || !model.ready || !awww.queryDone)
+        if (root._initialSelectionDone || !model.ready || !backend.queryDone)
             return;
 
-        // Start on the wallpaper awww is already showing. indexOfPath returns
+        // Start on the wallpaper the backend is already showing. indexOfPath returns
         // -1 when that file is outside the current list, so index 0 stays.
-        if (awww.currentPath !== "") {
-            const i = strip.indexOfPath(awww.currentPath);
+        if (backend.currentPath !== "") {
+            const i = strip.indexOfPath(backend.currentPath);
             if (i >= 0)
                 strip.scrollTo(i, Config.strip.scrollDuration);
         }
@@ -253,9 +253,9 @@ PanelWindow {
     }
 
     Connections {
-        target: awww
+        target: backend
         function onQueried() { root.applyInitialSelection() }
-        function onApplied(path) {
+        function onApplied(path, live) {
             if (Config.apply.closeOnApply)
                 Qt.quit();
         }
@@ -276,13 +276,13 @@ PanelWindow {
         root._initialSelectionDone = true;
 
         // Re-applying the current wallpaper has no visible effect.
-        if (item.path === awww.currentPath) {
+        if (item.path === backend.currentPath) {
             if (Config.apply.closeOnApply)
                 Qt.quit();
             return;
         }
 
-        awww.apply(item.path);
+        backend.apply(item.path, item.live === true);
     }
 
     // Status shown at the bottom of the overlay. Errors take priority over
@@ -291,14 +291,16 @@ PanelWindow {
         const errors = [];
         if (model.error !== "")
             errors.push("Scan: " + model.error);
-        if (awww.error !== "")
-            errors.push("awww: " + awww.error);
+        if (backend.error !== "")
+            errors.push("wallpaper: " + backend.error);
         if (errors.length > 0)
             return errors.join("\n");
         if (!Config.window.showInfoNotifications)
             return "";
-        if (awww.applying)
-            return "Applying wallpaper...";
+        if (backend.applying)
+            return backend.applyingLive
+                ? "Applying live wallpaper..."
+                : "Applying wallpaper...";
         if (model.scanning)
             return "Scanning wallpapers...";
         const q = search.query.trim();
@@ -312,7 +314,7 @@ PanelWindow {
         return "";
     }
 
-    readonly property bool statusIsError: model.error !== "" || awww.error !== ""
+    readonly property bool statusIsError: model.error !== "" || backend.error !== ""
 
     Rectangle {
         id: statusBox

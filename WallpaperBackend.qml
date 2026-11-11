@@ -3,10 +3,11 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Wraps the awww CLI.
+ * Wraps the wallpaper programs.
  *
- * The daemon owns the active wallpaper; the picker reads it back with
- * `awww query` and reports apply failures instead of closing silently.
+ * Images and GIFs are shown by awww, videos by mpvpaper. The picker reads the
+ * active wallpaper back with scripts/query-wallpaper.sh and reports apply
+ * failures instead of closing silently.
  */
 Item {
     id: root
@@ -16,10 +17,16 @@ Item {
     width: 0
     height: 0
 
-    // Empty while the daemon is not running or shows a plain colour.
+    // Empty while nothing is displayed or the source is unknown.
     property string currentPath: ""
 
+    // True while the active wallpaper is a video played by mpvpaper.
+    property bool currentLive: false
+
     property bool applying: false
+
+    // True while the in-flight apply is a video.
+    property bool applyingLive: false
 
     // True after a successful query, including a query that found no image.
     property bool queryDone: false
@@ -27,35 +34,46 @@ Item {
     property string error: ""
 
     signal queried()
-    signal applied(string path)
+    signal applied(string path, bool live)
     signal applyFailed(string message)
 
     readonly property string applyScript: Quickshell.shellPath("scripts/apply.sh")
+    readonly property string applyLiveScript: Quickshell.shellPath("scripts/apply-live.sh")
+    readonly property string queryScript: Quickshell.shellPath("scripts/query-wallpaper.sh")
 
     property string _pendingPath: ""
+    property bool _pendingLive: false
     property string _applyErr: ""
     property bool _applyStarted: false
+
+    property string _queryKind: ""
+    property string _queryPath: ""
 
     function refresh() {
         if (queryProc.running)
             return;
-        queryProc.buf = "";
+        root._queryKind = "";
+        root._queryPath = "";
+        root.error = "";
         queryProc.ok = false;
         queryProc.err = "";
-        root.error = "";
         queryProc.running = true;
     }
 
-    function apply(path) {
+    function apply(path, live) {
         if (!path || path === "" || applyProc.running)
             return;
 
         root.error = "";
         root._applyErr = "";
         root._pendingPath = path;
+        root._pendingLive = live === true;
         root.applying = true;
+        root.applyingLive = root._pendingLive;
         root._applyStarted = false;
-        applyProc.command = buildArgs(path);
+        applyProc.command = root._pendingLive
+            ? buildLiveArgs(path)
+            : buildArgs(path);
         applyProc.running = true;
     }
 
@@ -83,6 +101,49 @@ Item {
         return args;
     }
 
+    function buildLiveArgs(path) {
+        const a = Config.live;
+        const args = ["bash", root.applyLiveScript, path,
+                      "--layer", liveLayer(a.layer),
+                      "--mpv-options", liveOptions()];
+
+        if (a.pauseWhenHidden) {
+            args.push("--auto-pause");
+            const mode = autoPauseMode(a.autoPauseMode);
+            if (mode !== "")
+                args.push("--auto-mode", mode);
+        }
+        return args;
+    }
+
+    function liveOptions() {
+        const extra = String(Config.live.mpvOptions ?? "").trim();
+        return extra === "" ? "no-audio loop" : "no-audio loop " + extra;
+    }
+
+    function liveLayer(v) {
+        switch (v) {
+        case "background":
+        case "bottom":
+        case "top":
+        case "overlay":
+            return v;
+        default:
+            return "background";
+        }
+    }
+
+    function autoPauseMode(v) {
+        switch (v) {
+        case "full":
+            return "FULL";
+        case "max":
+            return "MAX";
+        default:
+            return "";
+        }
+    }
+
     // Config describes the visual result; awww names its resize algorithms.
     function resizeMode(v) {
         switch (v) {
@@ -104,24 +165,22 @@ Item {
         }
     }
 
-    // awww prints one line per output, and outputs may show different images.
-    // The picker only needs the first image path it finds.
     Process {
         id: queryProc
         // A shell wrapper makes a missing binary produce a normal exit code
         // and stderr instead of a Process that never starts.
-        command: ["bash", "-c", "exec awww query"]
+        command: ["bash", root.queryScript]
 
-        property string buf: ""
         property string err: ""
         property bool ok: false
 
         stdout: SplitParser {
             onRead: line => {
-                // Example: ": DP-2: 2560x1440, scale: 1, currently displaying: image: /path"
-                const m = line.match(/currently displaying:\s*image:\s*(.+?)\s*$/);
-                if (m && queryProc.buf === "")
-                    queryProc.buf = m[1];
+                const tab = line.indexOf("\t");
+                if (tab < 0)
+                    return;
+                root._queryKind = line.slice(0, tab);
+                root._queryPath = line.slice(tab + 1);
             }
         }
         stderr: SplitParser {
@@ -137,7 +196,8 @@ Item {
             // not clear a known path on a transient query failure.
             if (!queryProc.ok)
                 return;
-            root.currentPath = queryProc.buf;
+            root.currentPath = root._queryPath;
+            root.currentLive = root._queryKind === "video";
             root.queryDone = true;
             root.queried();
         }
@@ -150,7 +210,7 @@ Item {
             else
                 root.error = queryProc.err !== ""
                     ? queryProc.err
-                    : "awww query failed (" + code + ")";
+                    : "wallpaper query failed (" + code + ")";
         }
     }
 
@@ -174,20 +234,24 @@ Item {
             // the process never started, report the failure here.
             if (root.applying && root._pendingPath !== "" && !root._applyStarted) {
                 root.applying = false;
+                root.applyingLive = false;
                 root._pendingPath = "";
-                root.error = "could not start apply.sh";
+                root.error = "could not start the apply script";
                 root.applyFailed(root.error);
             }
         }
 
         onExited: (code, status) => {
             const path = root._pendingPath;
+            const live = root._pendingLive;
             const message = root._applyErr !== ""
                 ? root._applyErr
-                : "awww img failed (" + code + ")";
+                : (live ? "mpvpaper" : "awww img") + " failed (" + code + ")";
 
             root.applying = false;
+            root.applyingLive = false;
             root._pendingPath = "";
+            root._pendingLive = false;
             root._applyErr = "";
             root._applyStarted = false;
 
@@ -199,7 +263,8 @@ Item {
 
             root.error = "";
             root.currentPath = path;
-            root.applied(path);
+            root.currentLive = live;
+            root.applied(path, live);
             // The daemon updates its state asynchronously, after the command
             // exits.
             refreshTimer.restart();
