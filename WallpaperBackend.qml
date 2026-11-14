@@ -74,6 +74,7 @@ Item {
 
     function buildArgs(path) {
         const a = Config.apply;
+        const t = a.transition;
         const args = ["bash", root.applyScript, path];
 
         args.push("--resize", resizeMode(a.resize));
@@ -82,16 +83,16 @@ Item {
         if (a.resize === "cover")
             args.push("--crop-gravity", "center");
         args.push("--filter", a.filter);
-        args.push("--transition-type", transitionType(a.transitionType));
+        args.push("--transition-type", transitionType(t.type));
 
-        if (a.transitionType === "grow")
+        if (t.type === "grow")
             args.push("--transition-pos", "center");
-        if (a.transitionType === "wipe")
-            args.push("--transition-angle", String(a.transitionAngle));
-        if (a.transitionType !== "none") {
+        if (t.type === "wipe")
+            args.push("--transition-angle", String(t.angle));
+        if (t.type !== "none") {
             // Config uses milliseconds; awww uses seconds.
-            args.push("--transition-duration", String(Math.max(0.01, a.transitionDuration / 1000)));
-            args.push("--transition-fps", String(Math.max(1, a.transitionFps)));
+            args.push("--transition-duration", String(Math.max(0.01, t.duration / 1000)));
+            args.push("--transition-fps", String(Math.max(1, t.fps)));
         }
         return args;
     }

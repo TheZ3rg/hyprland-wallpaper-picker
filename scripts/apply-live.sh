@@ -82,7 +82,7 @@ command -v mpvpaper >/dev/null 2>&1 || {
 # new one.
 stop_live
 
-options="no-audio loop"
+options="loop"
 if [ -n "$MPV_OPTIONS" ]; then
     options="$options $MPV_OPTIONS"
 fi

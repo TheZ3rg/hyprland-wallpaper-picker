@@ -137,9 +137,11 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   shown at the bottom of the overlay.
 - ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
   or a file that cannot be converted is reported in the overlay.
-- Videos are played with mpvpaper on the `bottom` layer by default, above
-  awww's background surface and below normal windows. Change
-  `live.layer` if another program also uses that layer.
+- Videos are played with mpvpaper on the layer selected by `live.layer`.
+  `background` is the default, but awww also draws there; if the video does
+  not appear, use `bottom`, which stays above awww and below normal windows.
+- Video audio is controlled by `live.mpvOptions`. Add `no-audio` to mute the
+  video, or use `volume=...` to set its volume. Previews are always silent.
 - Applying a wallpaper replaces any mpvpaper process of the current user.
   Applying an image stops mpvpaper first; applying a video stops it, starts
   the new video and clears awww so no old image or GIF keeps rendering behind
