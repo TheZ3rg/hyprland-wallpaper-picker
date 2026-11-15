@@ -36,21 +36,21 @@ Item {
 
     readonly property string script: Quickshell.shellPath("scripts/sync-thumbs.sh")
 
-    // Focused preview size derived from the configured crop and tile scale.
+    // Preview size derived from the configured crop and center card scale.
     readonly property int previewHeight: Math.max(1, Config.previews.height)
     readonly property int previewWidth:
         Math.max(1, Math.round(previewHeight * Config.previews.aspectRatio
-            * Config.strip.focusWidthScale))
+            * Config.strip.centerWidthScale))
 
-    // Animated clips are smaller than static focused previews; their height
-    // follows the same focused crop aspect.
-    readonly property real focusedAspect:
+    // Animated clips are smaller than static previews; their height follows
+    // the same preview aspect.
+    readonly property real centerAspect:
         Math.max(0.05, Config.previews.aspectRatio
-            * Config.strip.focusWidthScale)
+            * Config.strip.centerWidthScale)
     readonly property int livePreviewWidth:
         Math.max(1, Config.live.previews.width)
     readonly property int livePreviewHeight:
-        Math.max(1, Math.round(livePreviewWidth / focusedAspect))
+        Math.max(1, Math.round(livePreviewWidth / centerAspect))
 
     // Rows are buffered so `items` is assigned once per scan instead of
     // rebuilding the strip for every line.
@@ -138,7 +138,7 @@ Item {
                     live: kind === "video" || kind === "gif",
                     // Played by mpvpaper instead of awww.
                     video: kind === "video",
-                    // The focused preview is an animated clip.
+                    // The preview is an animated clip.
                     animated: animated
                 });
             }

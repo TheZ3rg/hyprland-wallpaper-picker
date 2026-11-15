@@ -13,17 +13,17 @@ import Quickshell
 ///   Source            files scanned for wallpapers
 ///   Live wallpapers   videos played by mpvpaper
 ///   Thumbnails        small tiles in the strip
-///   Previews          enlarged image of the selected tile
+///   Previews          enlarged image or clip of the selected wallpaper
 ///   Strip             coverflow layout and animations
 ///   Overlay window    the full-screen picker itself
 ///   Search            search field and matching
 ///   Apply             awww transitions and closing behaviour
 ///
 /// Terms:
-///   awww       displays images and GIFs
-///   mpvpaper   plays video wallpapers
-///   thumbnail  small image in the strip
-///   preview    enlarged image or clip of the selected wallpaper
+///   awww         displays images and GIFs
+///   mpvpaper     plays video wallpapers
+///   thumbnail    small image in the strip
+///   preview      enlarged image or clip of the selected wallpaper
 Singleton {
     id: root
 
@@ -40,6 +40,8 @@ Singleton {
     ///
     /// Handled by awww, GIFs belong here for this reason.
     /// Lower-case is recommended.
+    ///
+    /// Example: ["jpg", "jpeg", "png", "webp", "gif"]
     property var extensions: ["jpg", "jpeg", "png", "webp", "gif"]
 
     // ── Live wallpapers ───────────────────────────────────────
@@ -56,6 +58,8 @@ Singleton {
         /// This is only a filename filter: mpvpaper can play any format mpv
         /// can decode. Thumbnails and previews also need ffmpeg support.
         /// Lower-case is recommended.
+        ///
+        /// Example: ["mp4", "webm", "mkv", "mov", "m4v"]
         property var extensions: ["mp4", "webm", "mkv", "mov", "m4v"]
 
         /// Time into the video used for its still thumbnail and as the start
@@ -143,11 +147,11 @@ Singleton {
         /// Ignored when pauseWhenHidden is false. Unknown values are ignored.
         property string autoPauseMode: "max"
 
-        /// Short muted clips shown in the focused tile.
+        /// Short muted clips shown in the center card.
         ///
         /// They are generated during the scan and cached. Changing the clip
         /// settings regenerates them. When disabled, videos and GIFs still get
-        /// a static enlarged image, so they can still be focused.
+        /// a static enlarged image in the center card.
         property QtObject previews: QtObject {
             /// Enable animated previews.
             property bool enabled: true
@@ -166,8 +170,8 @@ Singleton {
 
             /// Clip width in pixels.
             ///
-            /// The height follows the focused tile aspect:
-            /// previews.aspectRatio * strip.focusWidthScale.
+            /// The height follows the center card aspect:
+            /// previews.aspectRatio * strip.centerWidthScale.
             /// This is intentionally smaller than previews.height because an
             /// animated clip decodes many frames; a few hundred pixels is
             /// usually enough.
@@ -180,7 +184,7 @@ Singleton {
         }
     }
 
-    // ── Thumbnails and focused previews ───────────────────────
+    // ── Thumbnails and previews ───────────────────────────────
 
     /// Small images shown in the strip.
     ///
@@ -224,7 +228,7 @@ Singleton {
         property int fadeInDuration: 800
     }
 
-    /// The larger image shown for the selected (focused) tile.
+    /// The larger image shown in the center card.
     ///
     /// It is generated during the scan and cached. Changing its size or aspect
     /// regenerates it. This is independent of the animated clips in
@@ -233,31 +237,20 @@ Singleton {
         /// Enable the enlarged image.
         property bool enabled: true
 
-        /// Shape of the focused image, as width / height.
+        /// Shape of the preview, as width / height.
         ///
         /// 0.8 = 4:5 portrait, 0.75 = 3:4, 1.0 = square, 1.33 = 4:3.
-        /// strip.focusWidthScale multiplies this.
+        /// strip.centerWidthScale multiplies this.
         property real aspectRatio: 0.8
 
-        /// Height of the focused preview in pixels.
+        /// Height of the preview in pixels.
         ///
         /// The width follows aspectRatio. Higher values are sharper but
         /// increase scan time, cache size and memory. Keep it at least as tall
-        /// as the displayed card to avoid upscaling.
+        /// as the center card to avoid upscaling.
         property int height: 1000
 
-        /// How long the selected card takes to widen, in milliseconds.
-        ///
-        /// 0 makes it instant.
-        property int expandDuration: 240
-
-        /// Start widening this many milliseconds before a long scroll ends.
-        ///
-        /// This overlaps the two animations. The lead never exceeds
-        /// expandDuration. 0 waits for the scroll to finish.
-        property int expandOverlap: 250
-
-        /// Cache directory for focused previews.
+        /// Cache directory for previews.
         ///
         /// Kept separate from thumbnails so the scan's cache cleanup does not
         /// delete previews. You normally do not need to change it.
@@ -268,26 +261,19 @@ Singleton {
 
     /// Layout and animation of the horizontal coverflow row.
     property QtObject strip: QtObject {
-        /// Height of the centred tile as a fraction of the screen height.
+        /// Height of the center tile as a fraction of the screen height.
         ///
         /// 0.28 = 28% of the screen height. Other tile sizes derive from it.
         property real itemHeightRatio: 0.28
-
-        /// Number of tiles around the selection that stay loaded.
-        ///
-        /// Larger values make distant scrolling smoother but use more memory.
-        property int visibleRange: 30
 
         /// What happens at the ends of the list.
         ///
         /// Possible values:
         ///   "endless"  wrap forever, repeating wallpapers if needed
-        ///   "jump"     jump instantly from one end to the other (experimental)
         ///   "off"      stop at the ends
         ///
         /// Unknown values fall back to "off".
-        // TODO: fix the "jump" mode
-        property string loopMode: "endless"
+        property string loopMode: "off"
 
         /// Gap between tiles in pixels.
         ///
@@ -299,34 +285,39 @@ Singleton {
         /// 0 makes it instant.
         property int selectionDuration: 500
 
-        /// Time for a long scroll to a distant wallpaper when the picker opens,
-        /// in milliseconds.
+        /// Maximum duration for a long move, in milliseconds.
         ///
-        /// 0 makes it instant.
-        property int scrollDuration: 800
+        /// Used for the opening scroll and as the upper bound when holding an
+        /// arrow or scrolling.
+        /// 0 makes the opening scroll instant; repeated moves then fall back
+        /// to selectionDuration.
+        property int scrollDuration: 600
 
         /// Scale tiles down toward the strip edges (the coverflow effect).
         ///
         /// Disable to keep every tile at the same scale.
         property bool coverflowEnabled: true
 
-        /// Scale of the centred tile and of tiles falloffRange slots away.
+        /// Scale of the center tile and of tiles falloffRange slots away.
         ///
-        /// 1.4 = 40% larger than the base tile; 0.6 = 60%.
-        property real centerScale: 1.4
+        /// 1.35 = 35% larger than the base tile; 0.6 = 60%.
+        property real centerScale: 1.35
         property real edgeScale: 0.6
 
         /// Number of tiles over which the scale falls from centerScale to
         /// edgeScale.
+        ///
+        /// Example: 9 = the 9th tile away from the centre is at edgeScale.
         property real falloffRange: 9.0
 
-        /// Extra size multipliers for the focused tile.
+        /// Extra size multipliers for the center card.
         ///
-        /// 1 = unchanged. focusWidthScale widens the card (it multiplies
-        /// previews.aspectRatio); focusHeightScale makes it taller. The wider
-        /// card appears once the preview is ready.
-        property real focusWidthScale: 1.35
-        property real focusHeightScale: 1.0
+        /// centerWidthScale widens the card (it multiplies previews.aspectRatio);
+        /// centerHeightScale lengthens it.
+        ///
+        /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
+        property real centerWidthScale: 1.35
+        property real centerHeightScale: 1.0
     }
 
     // ── Overlay window ────────────────────────────────────────
@@ -346,8 +337,7 @@ Singleton {
 
         /// Darkness of the overlay over the desktop, 0..1.
         ///
-        /// 0 = transparent, 1 = black. The desktop is blurred by a Hyprland
-        /// layer rule; blur strength is a compositor setting.
+        /// Example: 0.2 = 20% opaque black, 0 = no dimming, 1 = fully black.
         property real backgroundDim: 0.2
 
         /// Show informational messages at the bottom.
@@ -449,7 +439,7 @@ Singleton {
         ///   "fill"     stretches it
         ///
         /// Unknown values fall back to "cover".
-        property string resize: "contain"
+        property string resize: "cover"
 
         /// Scaling filter for awww.
         ///

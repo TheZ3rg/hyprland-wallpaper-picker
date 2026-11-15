@@ -12,23 +12,22 @@ not by the picker.
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
 - Optional looping (`strip.loopMode`): `endless` keeps the row continuous and
-  repeats wallpapers when needed; `jump` wraps instantly between the ends
-  without duplicates; `off` stops at the ends.
+  repeats wallpapers when needed; `off` stops at the ends.
 - Search by wallpaper name: jump to the best match while typing, or hide
   non-matching wallpapers (see `search.mode` in `Config.qml`).
 - Only a window of tiles around the selection is instantiated, so large
   folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
   thumbnail size, mode or corner radius regenerates it automatically.
-- The focused tile shows a wider, higher-resolution crop generated and cached
-  during the scan, so it is available as soon as a wallpaper is focused.
+- The center card shows a wider, higher-resolution crop generated and cached
+  during the scan, so it is available as soon as a wallpaper is selected.
 - Thumbnails are generated with ImageMagick 7; files that cannot be converted
   are skipped and reported.
 - Starts on the wallpaper that is currently displayed.
 - GIFs are supported, and animated GIFs are also shown live on the desktop.
 - Video wallpapers are played by [mpvpaper](https://github.com/GhostNaN/mpvpaper)
   and appear in the same strip as images.
-- Short muted previews of videos and animated GIFs play in the focused tile.
+- Short muted previews of videos and animated GIFs play in the center card.
   The clips are cached, so revisiting a wallpaper is instant.
 - A `LIVE` badge marks wallpapers that animate on the desktop.
 - The picker switches between awww and mpvpaper automatically.
@@ -105,8 +104,8 @@ case-insensitively, and ranks names starting with the query before names that
 merely contain it.
 
 `strip.loopMode` selects how the ends behave: `endless` wraps seamlessly,
-repeating wallpapers if the folder is smaller than the window; `jump` wraps
-instantly between the ends without duplicates; `off` stops at the ends.
+repeating wallpapers if the folder is smaller than the window; `off` stops at
+the ends.
 
 The picker closes after a successful apply by default; see `apply.closeOnApply`
 in `Config.qml`. If applying fails, it stays open and shows the error. A live
@@ -122,9 +121,9 @@ documented there. The main groups are:
   when hidden, and the `LIVE` badge;
 - live preview clips: enable/disable, length, frame rate, size and quality;
 - thumbnail generation, cache and fade-in;
-- focused preview crop, size and expansion duration;
-- strip height, visible range, pixel spacing, looping, coverflow/focused-tile
-  scaling and selection/scroll animation durations;
+- preview crop and size;
+- strip height, pixel spacing, looping, coverflow/center-card scaling and
+  selection/scroll animation durations;
 - overlay layer, background dim and informational messages;
 - search mode, field position, margin, opacity and animation duration;
 - awww apply transitions, resize, filter and close behaviour.
@@ -149,9 +148,9 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 - Video posters and animated previews are generated during the scan. A folder
   with many videos makes the first scan noticeably longer; the result is
   cached. Set `live.previews.enabled` to `false` to skip clip generation and
-  use a static focused crop instead.
+  use a static preview crop instead.
 - Animated previews are muted 2.5-second WebP clips by default and are
-  decoded only while a tile is focused and the strip is not moving. Long or
+  decoded only while a card is centered and the strip is not moving. Long or
   high-frame-rate clips use more memory, so keep `live.previews.duration`,
   `fps` and `width` moderate on low-memory machines.
 - GIFs are supported, but the first apply and thumbnail generation can be
@@ -161,7 +160,7 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 - `Config.window.layer` defaults to `overlay`, so the picker covers status
   bars. Set it to `top` to keep bars that also use the overlay layer visible
   above the picker.
-- Focused previews are generated and cached during the scan, like thumbnails.
+- Previews are generated and cached during the scan, like thumbnails.
   If a preview is missing or failed, that wallpaper simply does not widen.
 - The picker opens on the monitor that has focus at startup and follows focus
   changes while it is open.

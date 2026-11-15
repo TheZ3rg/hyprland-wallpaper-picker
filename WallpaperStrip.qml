@@ -15,8 +15,8 @@ import QtQuick
  * geometry as laying out the entire collection.
  *
  * In endless mode the window wraps around the list and may repeat wallpapers
- * when the folder is smaller than the window. In jump mode the layout is
- * finite and only the selection wraps, instantly, from one end to the other.
+ * when the folder is smaller than the window. In off mode the row is finite
+ * and stops at the ends.
  */
 Item {
     id: root
@@ -32,57 +32,77 @@ Item {
     // currentIndex remains the model index used by the rest of the picker.
     property int _virtualIndex: 0
 
+    // True while jumpTo() updates the selection without animating. The
+    // currentIndex handler must not turn that into a scroll.
+    property bool _instantMove: false
+
     signal activated(int index)
     signal navigated()
 
     readonly property int count: items.length
     readonly property string loopMode: {
         const m = Config.strip.loopMode;
-        return (m === "endless" || m === "jump") ? m : "off";
+        return m === "endless" ? "endless" : "off";
     }
     readonly property bool endless: root.loopMode === "endless"
-    readonly property bool jumpMode: root.loopMode === "jump"
     readonly property real baseHeight: height * Config.strip.itemHeightRatio
     readonly property real gap: Config.strip.spacing
+
+    // Position of the current target in index units.
+    readonly property real targetPosition: root.endless
+        ? root._virtualIndex
+        : root.currentIndex
+
+    // True while the row is still moving toward targetPosition.
+    readonly property bool moving: Math.abs(position - targetPosition) > 0.001
 
     // Scroll position in index units; fractional while animating.
     property real position: 0
     property bool animatePosition: true
-    // Duration of the current long scroll; set by scrollTo().
-    property int activeScrollDuration: 0
+    property int positionDuration: Math.max(0, Config.strip.selectionDuration)
+    // Duration requested for the next target change, or -1 for the
+    // distance-based default.
+    property int _nextDuration: -1
     Behavior on position {
         enabled: root.animatePosition
         NumberAnimation {
-            // Long scrolls get their own duration; ordinary selection moves
-            // keep the shorter one.
-            duration: root.scrolling
-                ? root.activeScrollDuration
-                : Config.strip.selectionDuration
+            duration: root.positionDuration
             easing.type: Easing.OutCubic
         }
     }
 
-    // The window must cover every tile that can be shown while `position`
-    // catches up with `currentIndex`, including the image-loading radius.
-    readonly property int visibleRadius: Math.max(1, Config.strip.visibleRange)
-    readonly property int jumpLimit: Math.max(1, Math.floor(visibleRadius / 2))
-    readonly property int windowRadius: visibleRadius + jumpLimit
-    readonly property int windowSize: windowRadius * 2 + 1
+    // The window must cover every tile that can be shown around the center,
+    // including a small preload margin. WallpaperStrip is anchored to the
+    // full-screen picker, so `width` is the focused monitor's logical width.
+    readonly property int preloadTiles: 2
+    readonly property bool hasGeometry: width > 0 && baseHeight > 0
+
+    readonly property real minAspect: {
+        if (Config.thumbnails.mode !== "preserve")
+            return Math.max(0.05,
+                Config.thumbnails.width / Math.max(1, Config.thumbnails.height));
+
+        let aspect = 1;
+        for (let i = 0; i < items.length; ++i) {
+            const a = items[i] ? items[i].aspect : 0;
+            if (a > 0)
+                aspect = Math.min(aspect, a);
+        }
+        return Math.max(0.25, aspect);
+    }
+
+    readonly property real minTileWidth:
+        Math.max(1, baseHeight * Math.max(0.05, Config.strip.edgeScale) * minAspect)
+
+    readonly property int visibleRadius: hasGeometry
+        ? Math.max(preloadTiles,
+            Math.ceil((width / 2) / minTileWidth) + preloadTiles)
+        : preloadTiles + 1
+
+    readonly property int windowSize: visibleRadius * 2 + 1
 
     // Index of the first item in the window.
     property int windowStart: 0
-
-    // True while a long scroll animates; the window follows `position`.
-    property bool scrolling: false
-
-    // True during the final part of a long scroll, when the focused card is
-    // allowed to start widening before the scroll fully stops.
-    property bool scrollFinishing: false
-
-    // Start the widen this early, but never earlier than the widening itself.
-    readonly property int widenLead:
-        Math.max(0, Math.min(Config.previews.expandOverlap,
-                                Config.previews.expandDuration))
 
     // Fixed delegate slots. slotIndex[s] is the window index rendered by
     // slot s; keeping it stable means a window shift only changes the slots
@@ -96,28 +116,8 @@ Item {
     // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
-    // Wider preview of the selected wallpaper, supplied by the scan manifest.
-    readonly property string currentItemPreview: {
-        const item = items[currentIndex];
-        return item ? (item.preview ?? "") : "";
-    }
-
-    // 0 = narrow strip crop, 1 = wider focused crop. Waits for long scrolls
-    // to finish (or their overlap window) and for a cached preview.
-    property real previewBlend: Config.previews.enabled
-        && (!scrolling || scrollFinishing)
-        && currentItemPreview !== ""
-        ? 1
-        : 0
-    Behavior on previewBlend {
-        NumberAnimation {
-            duration: Math.max(0, Config.previews.expandDuration)
-            easing.type: Easing.OutCubic
-        }
-    }
-
-    readonly property real focusedAspect:
-        Math.max(0.05, Config.previews.aspectRatio * Config.strip.focusWidthScale)
+    readonly property real centerAspect:
+        Math.max(0.05, Config.previews.aspectRatio * Config.strip.centerWidthScale)
 
     // Model index for a window index. Finite modes clamp; endless mode wraps
     // around the list.
@@ -153,49 +153,46 @@ Item {
         return base + delta;
     }
 
+    // Instant selection move used by initial load and filtering.
     function jumpTo(index) {
-        cancelScroll();
+        if (count === 0)
+            return;
+
+        root._instantMove = true;
         animatePosition = false;
         const model = Math.max(0, Math.min(count - 1, index));
         root._virtualIndex = root.virtualForModel(model, root.position);
         root.currentIndex = model;
         root.position = root._virtualIndex;
         animatePosition = true;
+        root._instantMove = false;
         updateWindow(true);
     }
 
-    // Instant end-to-start move used by jump mode; no row traversal.
-    function wrapJump(index) {
-        if (count === 0)
-            return;
-
-        const model = Math.max(0, Math.min(count - 1, index));
-        cancelScroll();
+    function snapTo(target) {
         animatePosition = false;
-        root._virtualIndex = model;
-        root.currentIndex = model;
-        root.position = model;
+        position = target;
         animatePosition = true;
-        updateWindow(true);
-        refreshSlots();
     }
 
-    function restartScrollTimers() {
-        finishTimer.restart();
-        if (root.widenLead > 0)
-            widenLeadTimer.restart();
-        else
-            widenLeadTimer.stop();
+    // Default duration for a move of `distance` slots. It keeps ordinary
+    // moves short and lets long moves take longer, capped by scrollDuration.
+    function durationForDistance(distance) {
+        const step = Math.max(0, Config.strip.selectionDuration);
+        if (step <= 0)
+            return 0;
+        const scroll = Math.max(0, Config.strip.scrollDuration);
+        if (scroll <= 0)
+            return step;
+        return Math.max(step, Math.min(scroll, distance * 100));
     }
 
     /**
-     * Animate to `index` over `duration` milliseconds.
+     * Move to `index`.
      *
-     * `duration` defaults to strip.scrollDuration. Nearby targets use the
-     * normal selection animation and fit inside the current window. Distant
-     * targets mark the strip as scrolling: the window then follows `position`
-     * frame by frame, so every intermediate tile is rendered without
-     * instantiating the whole collection.
+     * `duration` overrides the distance-based default; 0 jumps instantly.
+     * `position` always animates and the window always follows it, so there
+     * is no separate long-scroll mode.
      */
     function scrollTo(index, duration) {
         if (count === 0)
@@ -204,56 +201,26 @@ Item {
         const model = Math.max(0, Math.min(count - 1, index));
         const target = root.virtualForModel(model, root.position);
         if (target === root._virtualIndex) {
-            if (root.currentIndex !== model)
+            if (root.currentIndex !== model) {
+                root._nextDuration = duration === undefined ? -1 : duration;
                 root.currentIndex = model;
-            if (scrolling)
-                restartScrollTimers();
+                root._nextDuration = -1;
+            }
             return;
         }
 
-        const distance = Math.abs(target - root._virtualIndex);
-        if (distance <= jumpLimit) {
-            root._virtualIndex = target;
-            root.currentIndex = model;
-            return;
-        }
-
-        const scrollDuration = duration === undefined
-            ? Config.strip.scrollDuration
+        const moveDuration = duration === undefined
+            ? root.durationForDistance(Math.abs(target - root._virtualIndex))
             : duration;
-        if (scrollDuration <= 0) {
+        if (moveDuration <= 0) {
             jumpTo(model);
             return;
         }
 
-        activeScrollDuration = scrollDuration;
-        scrollFinishing = false;
-        scrolling = true;
-        restartScrollTimers();
+        root._nextDuration = moveDuration;
         root._virtualIndex = target;
         root.currentIndex = model;
-    }
-
-    function cancelScroll() {
-        if (finishTimer)
-            finishTimer.stop();
-        if (widenLeadTimer)
-            widenLeadTimer.stop();
-        scrollFinishing = false;
-        scrolling = false;
-    }
-
-    function finishScroll() {
-        if (!scrolling)
-            return;
-
-        widenLeadTimer.stop();
-        scrollFinishing = false;
-        scrolling = false;
-        animatePosition = false;
-        position = root._virtualIndex;
-        animatePosition = true;
-        updateWindow(true);
+        root._nextDuration = -1;
     }
 
     // Path of the selected wallpaper, or "" when the list is empty.
@@ -287,12 +254,6 @@ Item {
             return;
         }
 
-        if (root.jumpMode && count > 1 && currentIndex === count - 1) {
-            root.wrapJump(0);
-            navigated();
-            return;
-        }
-
         if (currentIndex < count - 1) {
             root._virtualIndex = currentIndex + 1;
             currentIndex++;
@@ -313,12 +274,6 @@ Item {
             return;
         }
 
-        if (root.jumpMode && count > 1 && currentIndex === 0) {
-            root.wrapJump(count - 1);
-            navigated();
-            return;
-        }
-
         if (currentIndex > 0) {
             root._virtualIndex = currentIndex - 1;
             currentIndex--;
@@ -327,9 +282,6 @@ Item {
     }
 
     function updateWindow(force) {
-        if (root.scrolling)
-            return;
-
         if (count === 0) {
             windowStart = 0;
             return;
@@ -360,7 +312,7 @@ Item {
             windowStart = start;
     }
 
-    // Keep the scrolling window centred on the animated position.
+    // Keep the window centered on the animated position.
     function followScroll() {
         if (count === 0)
             return;
@@ -427,48 +379,51 @@ Item {
         slotIndex = next;
     }
 
-    onPositionChanged: {
-        if (root.scrolling)
-            root.followScroll();
-    }
+    onPositionChanged: root.followScroll()
 
     onCurrentIndexChanged: {
         const target = root.endless
             ? root._virtualIndex
             : root.currentIndex;
 
-        if (root.scrolling) {
-            position = target;
-            root.scrollFinishing = false;
-            root.restartScrollTimers();
+        if (root._instantMove) {
+            root._nextDuration = -1;
+            root.snapTo(target);
+            updateWindow(true);
             return;
         }
 
-        // A jump larger than the window margin cannot be animated through
-        // tiles that are not instantiated.
-        if (Math.abs(position - target) > jumpLimit) {
-            animatePosition = false;
-            position = target;
-            animatePosition = true;
-        } else {
-            position = target;
+        const duration = root._nextDuration >= 0
+            ? root._nextDuration
+            : root.durationForDistance(Math.abs(position - target));
+        root._nextDuration = -1;
+
+        if (duration <= 0) {
+            root.snapTo(target);
+            return;
         }
-        updateWindow(false);
+
+        root.positionDuration = duration;
+        position = target;
     }
 
     // Keep the selection valid when the model shrinks or empties.
     onCountChanged: {
         if (count === 0) {
-            cancelScroll();
+            root._instantMove = true;
             root._virtualIndex = 0;
             currentIndex = 0;
+            root._instantMove = false;
         } else {
             const model = Math.min(currentIndex, count - 1);
             root._virtualIndex = root.endless
                 ? root.virtualForModel(model, root.position)
                 : model;
-            if (currentIndex !== model)
+            if (currentIndex !== model) {
+                root._instantMove = true;
                 currentIndex = model;
+                root._instantMove = false;
+            }
         }
         updateWindow(false);
     }
@@ -481,7 +436,6 @@ Item {
         if (count === 0)
             return;
 
-        root.cancelScroll();
         root._virtualIndex = root.endless
             ? root.virtualForModel(root.currentIndex, root.position)
             : root.currentIndex;
@@ -495,7 +449,6 @@ Item {
     // Replacing the list (initial load, filtered results) must recentre the
     // window; the old windowStart may point past the new end.
     onItemsChanged: {
-        cancelScroll();
         updateWindow(true);
         refreshSlots();
     }
@@ -503,25 +456,6 @@ Item {
     Component.onCompleted: {
         updateWindow(true);
         refreshSlots();
-    }
-
-    Timer {
-        id: finishTimer
-
-        // A little longer than the animation so the final frame is painted.
-        interval: Math.max(1, root.activeScrollDuration) + 50
-        onTriggered: root.finishScroll()
-    }
-
-    Timer {
-        id: widenLeadTimer
-
-        // Fires early enough for the widen to overlap the end of the scroll.
-        interval: Math.max(0, root.activeScrollDuration - root.widenLead)
-        onTriggered: {
-            if (root.scrolling)
-                root.scrollFinishing = true;
-        }
     }
 
     function scaleForIndex(i) {
@@ -534,9 +468,9 @@ Item {
     }
 
     // Layout for the current window, recomputed on every frame of the
-    // animation. Each entry is { x, w, h, s }: left edge before centring,
+    // animation. Each entry is { x, w, h, s }: left edge before centering,
     // width, height and scale. Width follows the image aspect. Coordinates
-    // are local to `windowStart`; the offsets cancel when the row is centred.
+    // are local to `windowStart`; the offsets cancel when the row is centered.
     readonly property var metrics: {
         const out = [];
         let x = 0;
@@ -544,24 +478,19 @@ Item {
             const i = windowStart + slot;
             const s = scaleForIndex(i);
 
-            // The focused tile's extra size is part of the layout, so the
-            // neighbours slide outward instead of being covered. Width only
-            // widens once the focused preview is ready.
-            const focus = Math.max(0, 1 - Math.abs(i - position));
+            // The center card's extra size is part of the layout, so the
+            // neighbours slide outward instead of being covered. Each tile
+            // widens based on its distance from the center and its own cached
+            // preview; there is no separate scroll mode.
+            const centerWeight = Math.max(0, 1 - Math.abs(i - position));
             const heightFactor =
-                1 + (Config.strip.focusHeightScale - 1) * focus;
+                1 + (Config.strip.centerHeightScale - 1) * centerWeight;
 
             const item = root.itemAt(i);
             const a = (item && item.aspect) ? item.aspect : 0.7;
             const hasPreview = item && item.preview !== "";
-            const wideAspect = hasPreview ? root.focusedAspect : a;
-
-            // During the overlap only the destination tile widens; otherwise
-            // every passing tile with a cached preview would grow.
-            const wideFocus = root.scrolling
-                ? (i === root._virtualIndex ? focus : 0)
-                : focus;
-            const aspect = a + (wideAspect - a) * wideFocus * root.previewBlend;
+            const wideAspect = hasPreview ? root.centerAspect : a;
+            const aspect = a + (wideAspect - a) * centerWeight;
 
             const h = baseHeight * s * heightFactor;
             const w = h * aspect;
@@ -617,11 +546,12 @@ Item {
             readonly property real dist: cell.hasSlot
                 ? Math.abs(cell.virtualIndex - root.position)
                 : 1e9
-            readonly property bool shown: cell.m !== null
-                && cell.dist <= Config.strip.visibleRange
+            readonly property bool onScreen: cell.m !== null
+                && cell.x + cell.width >= -root.baseHeight
+                && cell.x <= root.width + root.baseHeight
             readonly property string thumbUrl: cell.entry ? cell.entry.thumb : ""
 
-            readonly property real focusWeight: cell.hasSlot
+            readonly property real centerWeight: cell.hasSlot
                 ? Math.max(0, 1 - Math.abs(cell.virtualIndex - root.position))
                 : 0
             readonly property string previewUrl:
@@ -629,12 +559,12 @@ Item {
             readonly property bool animatedPreview:
                 cell.entry ? (cell.entry.animated === true) : false
             readonly property bool previewActive:
-                cell.previewUrl !== "" && cell.focusWeight > 0.001
+                cell.previewUrl !== "" && cell.centerWeight > 0.001
 
-            // Animated clips are decoded only after the row stops moving, so
-            // fast scrolling does not load a clip for every passing tile.
+            // Animated clips play only when the row is settled. While moving,
+            // the center card keeps showing the static first frame.
             readonly property bool livePreviewActive:
-                cell.animatedPreview && cell.previewActive && !root.scrolling
+                cell.animatedPreview && cell.previewActive && !root.moving
 
             // Keep the first frame visible while a clip loads.
             readonly property bool staticPreviewActive:
@@ -646,12 +576,9 @@ Item {
             property bool previewLoaded: false
             property bool livePreviewLoaded: false
 
-            // Preload tiles just outside the viewport while scrolling, so
-            // they have a chance to decode before becoming visible.
-            readonly property int loadRadius: Config.strip.visibleRange
-                + (root.scrolling ? root.jumpLimit : 0)
+            // The derived window already includes the preload margin, so every
+            // slot that exists is kept loaded.
             readonly property bool loadable: cell.m !== null
-                && cell.dist <= cell.loadRadius
 
             // Fade each tile in once its thumbnail has decoded, avoiding a
             // row that pops in item by item. The map makes a tile opaque when
@@ -668,7 +595,7 @@ Item {
                 }
             }
 
-            visible: shown
+            visible: onScreen
             width: m ? m.w : 0
             height: m ? m.h : 0
             x: (m ? m.x : 0) + root.rowTranslate
@@ -695,7 +622,7 @@ Item {
                 }
             }
 
-            // Wider, higher-resolution crop shown once the focused tile's
+            // Wider, higher-resolution crop shown once the center card's
             // preview is ready. For animated wallpapers this is the first
             // frame of the clip until the clip itself is loaded. It stays
             // opaque; the widening animation reveals more of it instead of
@@ -715,9 +642,9 @@ Item {
                 onStatusChanged: cell.previewLoaded = (status === Image.Ready)
             }
 
-            // Muted looping clip for a focused video or GIF. It replaces the
-            // static first frame once decoded and pauses as soon as the tile
-            // loses focus.
+            // Muted looping clip for the selected video or GIF. It replaces
+            // the static first frame once decoded and pauses as soon as the
+            // card leaves the center.
             AnimatedImage {
                 id: livePreviewImage
 
