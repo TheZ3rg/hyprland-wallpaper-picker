@@ -105,6 +105,10 @@ PanelWindow {
         id: model
     }
 
+    SettingsValidator {
+        id: settingsValidator
+    }
+
     WallpaperSearch {
         id: search
         items: model.items
@@ -268,6 +272,9 @@ PanelWindow {
     }
 
     function applyIndex(index) {
+        if (settingsValidator.hasErrors)
+            return;
+
         // Filtering changes the strip's list, so read from it rather than
         // from the model.
         const item = strip.items[index];
@@ -290,6 +297,10 @@ PanelWindow {
     // progress and empty-state hints.
     readonly property string statusText: {
         const errors = [];
+        for (let i = 0; i < settingsValidator.errors.length; ++i)
+            errors.push("Config: " + settingsValidator.errors[i]);
+        if (settingsValidator.hasErrors)
+            errors.push("Fix Config.qml and restart.");
         if (model.error !== "")
             errors.push("Scan: " + model.error);
         if (backend.error !== "")
@@ -315,7 +326,8 @@ PanelWindow {
         return "";
     }
 
-    readonly property bool statusIsError: model.error !== "" || backend.error !== ""
+    readonly property bool statusIsError:
+        settingsValidator.hasErrors || model.error !== "" || backend.error !== ""
 
     Rectangle {
         id: statusBox
@@ -382,7 +394,7 @@ PanelWindow {
     Shortcut {
         sequence: "Return"
         context: Qt.ApplicationShortcut
-        enabled: model.ready && !searchField.editing
+        enabled: model.ready && !searchField.editing && !settingsValidator.hasErrors
         onActivated: root.applyIndex(strip.currentIndex)
     }
 

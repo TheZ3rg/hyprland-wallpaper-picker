@@ -8,7 +8,7 @@ import Quickshell
 /// Restart the picker after editing.
 ///
 /// Groups:
-///   Source            files scanned for wallpapers
+///   Source            directories scanned for wallpapers
 ///   awww              images and GIFs
 ///   mpvpaper          video wallpapers
 ///   Thumbnails        small tiles in the strip
@@ -65,7 +65,7 @@ Singleton {
             ///   "fade"  cross-fades
             ///   "wave"  wavy wipe
             ///
-            /// Unknown values fall back to "grow".
+            /// Invalid values raise an error and block applying.
             property string type: "grow"
 
             /// Transition duration in milliseconds.
@@ -95,7 +95,7 @@ Singleton {
         ///   "contain"  fits the whole image inside it
         ///   "fill"     stretches it
         ///
-        /// Unknown values fall back to "cover".
+        /// Invalid values raise an error and block applying.
         property string resize: "cover"
 
         /// Scaling filter for awww.
@@ -107,7 +107,7 @@ Singleton {
         ///   "Mitchell"    softer
         ///   "Lanczos3"    sharpest, slowest
         ///
-        /// Use the exact spelling. Invalid names can fail the apply.
+        /// Use the exact spelling. Invalid names raise an error and block applying.
         property string filter: "Lanczos3"
     }
 
@@ -142,7 +142,7 @@ Singleton {
         ///   "overlay"      draw over everything and so are not useful for a
         ///                  wallpaper.
         ///
-        /// Unknown values fall back to "background".
+        /// Invalid values raise an error and block applying.
         property string layer: "background"
 
         /// Extra mpv options for the desktop video.
@@ -194,7 +194,7 @@ Singleton {
 
         /// Extend pauseWhenHidden, configure when pause occurs.
         ///
-        /// Ignored when pauseWhenHidden is false. Unknown values are ignored.
+        /// Ignored when pauseWhenHidden is false. Invalid values still raise an error.
         ///
         /// Possible values:
         ///   ""      only the compositor's hidden detection
@@ -213,8 +213,10 @@ Singleton {
         /// Thumbnail size in pixels.
         ///
         /// Every thumbnail is cropped to fill exactly width x height.
+        ///
+        /// Example: 600x400 = 600 pixels wide and 400 pixels tall.
         /// TODO: make this a fraction of the screen size and fix the docs.
-        property int width: 400
+        property int width: 600
         property int height: 400
 
         /// Rounded corner radius in pixels.
@@ -259,6 +261,7 @@ Singleton {
         ///
         /// 0.8 = 4:5 portrait, 0.75 = 3:4, 1.0 = square, 1.33 = 4:3.
         /// strip.centerWidthScale multiplies this.
+        /// TODO: looks strange, needs corrections.
         property real aspectRatio: 1.33
 
         /// Height of the preview in pixels.
@@ -266,12 +269,15 @@ Singleton {
         /// The width follows aspectRatio. Higher values are sharper but
         /// increase scan time, cache size and memory. Keep it at least as tall
         /// as the center card to avoid upscaling.
+        /// TODO: looks strange, why this exists when there is aspectRatio?
         property int height: 1000
 
         /// Cache directory for previews.
         ///
         /// Kept separate from thumbnails so the scan's cache cleanup does not
         /// delete previews. You normally do not need to change it.
+        ///
+        /// Example: "/home/user/.cache/qs-wallpaper-picker/previews"
         property string cacheDir: root.thumbnails.cacheDir + "/previews"
 
         /// Short muted clips shown in the center card.
@@ -320,7 +326,9 @@ Singleton {
     property QtObject strip: QtObject {
         /// Height of the center tile as a fraction of the screen height.
         ///
-        /// 0.28 = 28% of the screen height. Other tile sizes derive from it.
+        /// Other tile sizes derive from it.
+        ///
+        /// Example: 0.28 = 28% of the screen height.
         property real itemHeightRatio: 0.28
 
         /// What happens at the ends of the list.
@@ -329,25 +337,27 @@ Singleton {
         ///   "endless"  wrap forever, repeating wallpapers if needed
         ///   "off"      stop at the ends
         ///
-        /// Unknown values fall back to "off".
-        property string loopMode: "off"
+        /// Invalid values raise an error and block applying.
+        property string loopMode: "endless"
 
         /// Gap between tiles in pixels.
         ///
         /// Unlike tile sizes, it does not scale with the screen.
+        /// TODO: make this a fraction of the screen size and fix the docs.
         property int spacing: 8
 
-        /// Time for a one-step move (arrow, wheel, trackpad), in milliseconds.
+        /// Time for an input-driven move, in milliseconds.
         ///
-        /// 0 makes it instant.
-        property int selectionDuration: 500
+        /// One arrow step, wheel/trackpad input, and catching up after holding
+        /// a key.
+        ///
+        /// Example: 500 = 0.5 seconds; 0 makes these moves instant.
+        property int selectionDuration: 600
 
-        /// Maximum duration for a long move, in milliseconds.
+        /// Duration of the opening scroll when the picker starts, in
+        /// milliseconds.
         ///
-        /// Used for the opening scroll and as the upper bound when holding an
-        /// arrow or scrolling.
-        /// 0 makes the opening scroll instant; repeated moves then fall back
-        /// to selectionDuration.
+        /// Example: 600 = 0.6 seconds; 0 makes the opening scroll instant.
         property int scrollDuration: 600
 
         /// Scale tiles down toward the strip edges (the coverflow effect).
@@ -393,7 +403,7 @@ Singleton {
         ///   "bottom"      under normal windows; rarely useful
         ///   "background"  under everything; rarely useful
         ///
-        /// Unknown values fall back to "overlay".
+        /// Invalid values raise an error and block applying.
         property string layer: "overlay"
 
         /// Darkness of the overlay over the desktop, 0..1.
@@ -421,21 +431,21 @@ Singleton {
         ///   "scroll"  jump to the best match as you type
         ///   "filter"  hide wallpapers that do not match
         ///
-        /// Unknown values fall back to "scroll".
+        /// Invalid values raise an error and block applying.
         property string mode: "scroll"
 
-        /// Horizontal position.
+        /// Horizontal position of the search field.
         ///
         /// Possible values: "left", "center", "right".
         ///
-        /// Unknown values fall back to "center".
+        /// Invalid values raise an error and block applying.
         property string horizontalAlignment: "center"
 
-        /// Vertical position.
+        /// Vertical position of the search field.
         ///
         /// Possible values: "top", "center", "bottom".
         ///
-        /// Unknown values fall back to "top".
+        /// Invalid values raise an error and block applying.
         property string verticalAlignment: "bottom"
 
         /// Distance from the chosen screen edges, in pixels.
@@ -447,7 +457,7 @@ Singleton {
         /// Opacity of the search field when it is not being edited.
         ///
         /// Example: 0 - fully transparent 1 - fully opaque.
-        property real unfocusedOpacity: 0
+        property real unfocusedOpacity: 1
 
         /// Animation time for search jumps, in milliseconds.
         ///

@@ -165,22 +165,10 @@ Item {
         animatePosition = true;
     }
 
-    // Default duration for a move of `distance` slots. It keeps ordinary
-    // moves short and lets long moves take longer, capped by scrollDuration.
-    function durationForDistance(distance) {
-        const step = Math.max(0, Config.strip.selectionDuration);
-        if (step <= 0)
-            return 0;
-        const scroll = Math.max(0, Config.strip.scrollDuration);
-        if (scroll <= 0)
-            return step;
-        return Math.max(step, Math.min(scroll, distance * 100));
-    }
-
     /**
      * Move to `index`.
      *
-     * `duration` overrides the distance-based default; 0 jumps instantly.
+     * `duration` overrides the selection duration; 0 jumps instantly.
      * `position` always animates and the window always follows it, so there
      * is no separate long-scroll mode.
      */
@@ -200,7 +188,7 @@ Item {
         }
 
         const moveDuration = duration === undefined
-            ? root.durationForDistance(Math.abs(target - root._virtualIndex))
+            ? Math.max(0, Config.strip.selectionDuration)
             : duration;
         if (moveDuration <= 0) {
             jumpTo(model);
@@ -385,7 +373,7 @@ Item {
 
         const duration = root._nextDuration >= 0
             ? root._nextDuration
-            : root.durationForDistance(Math.abs(position - target));
+            : Math.max(0, Config.strip.selectionDuration);
         root._nextDuration = -1;
 
         if (duration <= 0) {

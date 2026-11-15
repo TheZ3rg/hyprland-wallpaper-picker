@@ -130,6 +130,8 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
 ## Notes
 
+- Invalid `Config.qml` values raise an error, are listed in the overlay, and
+  block applying. Browsing and search still work.
 - Errors from the scanner, wallpaper queries, `awww img` and `mpvpaper` are
   shown at the bottom of the overlay.
 - ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
