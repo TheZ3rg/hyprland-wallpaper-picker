@@ -54,10 +54,10 @@ PanelWindow {
     // Transparent so the compositor-blurred desktop stays visible.
     color: "transparent"
 
-    // Layer-shell level from Config.window.layer. "overlay" (the default)
+    // Layer-shell level from Config.overlay.layer. "overlay" (the default)
     // covers panels and bars; "top" keeps bars that use the overlay layer
     // above the picker.
-    WlrLayershell.layer: root.layerFor(Config.window.layer)
+    WlrLayershell.layer: root.layerFor(Config.overlay.layer)
 
     // Must match the namespace used by Hyprland's layer rule.
     WlrLayershell.namespace: "quickshell:wallpaperPicker"
@@ -134,7 +134,7 @@ PanelWindow {
 
     Rectangle {
         anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, Config.window.backgroundDim)
+        color: Qt.rgba(0, 0, 0, Config.overlay.backgroundDim)
     }
 
     WallpaperStrip {
@@ -257,7 +257,7 @@ PanelWindow {
         target: backend
         function onQueried() { root.applyInitialSelection() }
         function onApplied(path) {
-            if (Config.apply.closeOnApply)
+            if (Config.overlay.closeOnApply)
                 Qt.quit();
         }
     }
@@ -278,7 +278,7 @@ PanelWindow {
 
         // Re-applying the current wallpaper has no visible effect.
         if (item.path === backend.currentPath) {
-            if (Config.apply.closeOnApply)
+            if (Config.overlay.closeOnApply)
                 Qt.quit();
             return;
         }
@@ -296,7 +296,7 @@ PanelWindow {
             errors.push("wallpaper: " + backend.error);
         if (errors.length > 0)
             return errors.join("\n");
-        if (!Config.window.showInfoNotifications)
+        if (!Config.overlay.showInfoNotifications)
             return "";
         if (backend.applying)
             return backend.applyingLive
@@ -311,7 +311,7 @@ PanelWindow {
             return search.matchCount + (search.matchCount === 1 ? " match" : " matches");
         }
         if (model.ready && model.items.length === 0)
-            return "No wallpapers found in " + Config.wallpaperDir;
+            return "No wallpapers found in " + Config.source.dir;
         return "";
     }
 

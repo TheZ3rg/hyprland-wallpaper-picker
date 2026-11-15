@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Scans Config.wallpaperDir and exposes the wallpapers as `items`.
+ * Scans Config.source.dir and exposes the wallpapers as `items`.
  *
  * File discovery and thumbnail generation happen in scripts/sync-thumbs.sh,
  * which prints a tab-separated manifest parsed here.
@@ -48,7 +48,7 @@ Item {
         Math.max(0.05, Config.previews.aspectRatio
             * Config.strip.centerWidthScale)
     readonly property int livePreviewWidth:
-        Math.max(1, Config.live.previews.width)
+        Math.max(1, Config.previews.animated.width)
     readonly property int livePreviewHeight:
         Math.max(1, Math.round(livePreviewWidth / centerAspect))
 
@@ -89,24 +89,23 @@ Item {
         // Positional arguments must match scripts/sync-thumbs.sh.
         command: [
             "bash", root.script,
-            Config.wallpaperDir,
+            Config.source.dir,
             Config.thumbnails.cacheDir,
-            Config.thumbnails.mode,
             String(Config.thumbnails.width),
             String(Config.thumbnails.height),
-            Config.extensions.join(","),
+            Config.awww.extensions.join(","),
             String(Config.thumbnails.cornerRadius),
             Config.previews.enabled ? Config.previews.cacheDir : "",
             String(root.previewWidth),
             String(root.previewHeight),
-            Config.live.enabled ? Config.live.extensions.join(",") : "",
-            (Config.live.previews.enabled && Config.previews.enabled) ? "1" : "0",
+            Config.mpvpaper.enabled ? Config.mpvpaper.extensions.join(",") : "",
+            (Config.previews.animated.enabled && Config.previews.enabled) ? "1" : "0",
             String(root.livePreviewWidth),
             String(root.livePreviewHeight),
-            String(Config.live.previews.duration),
-            String(Config.live.previews.fps),
-            String(Config.live.previews.quality),
-            String(Config.live.posterSeek)
+            String(Config.previews.animated.duration),
+            String(Config.previews.animated.fps),
+            String(Config.previews.animated.quality),
+            String(Config.thumbnails.videoPosterSeek)
         ]
 
         // Manifest row:

@@ -73,7 +73,7 @@ Item {
     }
 
     function buildArgs(path) {
-        const a = Config.apply;
+        const a = Config.awww;
         const t = a.transition;
         const args = ["bash", root.applyScript, path];
 
@@ -98,10 +98,10 @@ Item {
     }
 
     function buildLiveArgs(path) {
-        const a = Config.live;
+        const a = Config.mpvpaper;
         const args = ["bash", root.applyLiveScript, path,
                       "--layer", liveLayer(a.layer),
-                      "--mpv-options", String(a.mpvOptions ?? "").trim()];
+                      "--mpv-options", String(a.options ?? "").trim()];
 
         if (a.pauseWhenHidden) {
             args.push("--auto-pause");

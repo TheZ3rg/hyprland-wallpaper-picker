@@ -77,19 +77,9 @@ Item {
     readonly property int preloadTiles: 2
     readonly property bool hasGeometry: width > 0 && baseHeight > 0
 
-    readonly property real minAspect: {
-        if (Config.thumbnails.mode !== "preserve")
-            return Math.max(0.05,
-                Config.thumbnails.width / Math.max(1, Config.thumbnails.height));
-
-        let aspect = 1;
-        for (let i = 0; i < items.length; ++i) {
-            const a = items[i] ? items[i].aspect : 0;
-            if (a > 0)
-                aspect = Math.min(aspect, a);
-        }
-        return Math.max(0.25, aspect);
-    }
+    readonly property real minAspect:
+        Math.max(0.05,
+            Config.thumbnails.width / Math.max(1, Config.thumbnails.height))
 
     readonly property real minTileWidth:
         Math.max(1, baseHeight * Math.max(0.05, Config.strip.edgeScale) * minAspect)
@@ -676,7 +666,7 @@ Item {
             Rectangle {
                 id: liveBadge
 
-                visible: Config.live.showBadge && cell.entry
+                visible: Config.strip.showLiveBadge && cell.entry
                     && cell.entry.live === true && cell.width >= 56
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom

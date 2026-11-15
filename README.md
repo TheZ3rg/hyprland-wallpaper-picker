@@ -18,7 +18,7 @@ not by the picker.
 - Only a window of tiles around the selection is instantiated, so large
   folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
-  thumbnail size, mode or corner radius regenerates it automatically.
+  thumbnail size or corner radius regenerates it automatically.
 - The center card shows a wider, higher-resolution crop generated and cached
   during the scan, so it is available as soon as a wallpaper is selected.
 - Thumbnails are generated with ImageMagick 7; files that cannot be converted
@@ -107,7 +107,7 @@ merely contain it.
 repeating wallpapers if the folder is smaller than the window; `off` stops at
 the ends.
 
-The picker closes after a successful apply by default; see `apply.closeOnApply`
+The picker closes after a successful apply by default; see `overlay.closeOnApply`
 in `Config.qml`. If applying fails, it stays open and shows the error. A live
 wallpaper keeps playing after the picker closes.
 
@@ -116,17 +116,15 @@ wallpaper keeps playing after the picker closes.
 All settings live in [`Config.qml`](Config.qml), and each property is
 documented there. The main groups are:
 
-- wallpaper folder and accepted extensions;
-- video wallpapers: extensions, poster frame, mpvpaper layer and options, pausing
-  when hidden, and the `LIVE` badge;
-- live preview clips: enable/disable, length, frame rate, size and quality;
-- thumbnail generation, cache and fade-in;
-- preview crop and size;
-- strip height, pixel spacing, looping, coverflow/center-card scaling and
-  selection/scroll animation durations;
-- overlay layer, background dim and informational messages;
-- search mode, field position, margin, opacity and animation duration;
-- awww apply transitions, resize, filter and close behaviour.
+- wallpaper folder;
+- awww: image/GIF extensions, transitions, resize and filter;
+- mpvpaper: video extensions, layer, mpv options and pausing when hidden;
+- thumbnail boxes, cache and fade-in;
+- static preview crop and animated preview clips;
+- strip height, pixel spacing, looping, coverflow/center-card scaling, the
+  `LIVE` badge and selection/scroll animation durations;
+- overlay layer, background dim, informational messages and close behaviour;
+- search mode, field position, margin, opacity and animation duration.
 
 The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
@@ -136,10 +134,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   shown at the bottom of the overlay.
 - ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
   or a file that cannot be converted is reported in the overlay.
-- Videos are played with mpvpaper on the layer selected by `live.layer`.
+- Videos are played with mpvpaper on the layer selected by `mpvpaper.layer`.
   `background` is the default, but awww also draws there; if the video does
   not appear, use `bottom`, which stays above awww and below normal windows.
-- Video audio is controlled by `live.mpvOptions`. Add `no-audio` to mute the
+- Video audio is controlled by `mpvpaper.options`. Add `no-audio` to mute the
   video, or use `volume=...` to set its volume. Previews are always silent.
 - Applying a wallpaper replaces any mpvpaper process of the current user.
   Applying an image stops mpvpaper first; applying a video stops it, starts
@@ -147,17 +145,17 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   it. This also stops an mpvpaper started outside the picker.
 - Video posters and animated previews are generated during the scan. A folder
   with many videos makes the first scan noticeably longer; the result is
-  cached. Set `live.previews.enabled` to `false` to skip clip generation and
+  cached. Set `previews.animated.enabled` to `false` to skip clip generation and
   use a static preview crop instead.
 - Animated previews are muted 2.5-second WebP clips by default and are
   decoded only while a card is centered and the strip is not moving. Long or
-  high-frame-rate clips use more memory, so keep `live.previews.duration`,
+  high-frame-rate clips use more memory, so keep `previews.animated.duration`,
   `fps` and `width` moderate on low-memory machines.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folder
   are listed.
-- `Config.window.layer` defaults to `overlay`, so the picker covers status
+- `Config.overlay.layer` defaults to `overlay`, so the picker covers status
   bars. Set it to `top` to keep bars that also use the overlay layer visible
   above the picker.
 - Previews are generated and cached during the scan, like thumbnails.
