@@ -256,18 +256,19 @@ Singleton {
     /// previews.animated.
     property QtObject previews: QtObject {
         /// Enable the enlarged image.
-        property bool enabled: false
+        property bool enabled: true
 
         /// Preview size as multiples of the thumbnail size.
         ///
-        /// widthScale multiplies the thumbnail width and heightScale its height.
-        /// The resulting aspect is also used by the center card. Higher values
-        /// are sharper but increase scan time, cache size and memory.
+        /// widthScale and heightScale multiply the thumbnail width and height
+        /// for both the center card and its cached preview. They are display
+        /// multipliers, not just resolution.
         ///
-        /// Example: 4.5 and 2.0 on a 403 x 504 thumbnail produce an
-        /// 1814 x 1008 preview.
-        property real widthScale: 4.5
-        property real heightScale: 2.0
+        /// Higher values increase card size, scan time, cache size and memory.
+        ///
+        /// Example: 1.2 and 1.2 make the center card 1.2x the thumbnail size.
+        property real heightScale: 1.2
+        property real widthScale: 1.2
 
         /// Cache directory for previews.
         ///
