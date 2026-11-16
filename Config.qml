@@ -216,10 +216,9 @@ Singleton {
         /// monitors with different aspect ratios. They also set the size of the
         /// cached thumbnails.
         ///
-        /// Example: widthRatio 0.42 and heightRatio 0.28 on a 1440px-tall
-        /// monitor produce 605 x 403 thumbnails.
-        property real widthRatio: 0.42
-        property real heightRatio: 0.28
+        /// Example: heightRatio 0.35 and widthRatio 0.28.
+        property real heightRatio: 0.35
+        property real widthRatio: 0.28
 
         /// Rounded corner radius in pixels.
         ///
