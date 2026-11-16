@@ -45,7 +45,8 @@ Item {
         return m === "endless" ? "endless" : "off";
     }
     readonly property bool endless: root.loopMode === "endless"
-    readonly property real baseHeight: height * Config.strip.itemHeightRatio
+    readonly property real baseHeight: height * Config.thumbnails.heightRatio
+    readonly property real baseWidth: height * Config.thumbnails.widthRatio
     readonly property real gap: Config.strip.spacing
 
     // Position of the current target in index units.
@@ -77,12 +78,8 @@ Item {
     readonly property int preloadTiles: 2
     readonly property bool hasGeometry: width > 0 && baseHeight > 0
 
-    readonly property real minAspect:
-        Math.max(0.05,
-            Config.thumbnails.width / Math.max(1, Config.thumbnails.height))
-
     readonly property real minTileWidth:
-        Math.max(1, baseHeight * Math.max(0.05, Config.strip.edgeScale) * minAspect)
+        Math.max(1, baseWidth * Math.max(0.05, Config.strip.edgeScale))
 
     readonly property int visibleRadius: hasGeometry
         ? Math.max(preloadTiles,
@@ -643,7 +640,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Config.thumbnails.cornerRadius > 0
-                    ? Config.thumbnails.cornerRadius * (cell.width / Math.max(1, Config.thumbnails.width))
+                    ? Config.thumbnails.cornerRadius * (cell.width / Math.max(1, root.baseWidth))
                     : 0
                 color: "transparent"
                 border.width: 1

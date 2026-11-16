@@ -210,14 +210,16 @@ Singleton {
     /// They are generated during the scan and cached. Changing the size or
     /// corner radius regenerates them.
     property QtObject thumbnails: QtObject {
-        /// Thumbnail size in pixels.
+        /// Base tile size as fractions of the monitor height.
         ///
-        /// Every thumbnail is cropped to fill exactly width x height.
+        /// Both values use screen height, so the tile aspect stays the same on
+        /// monitors with different aspect ratios. They also set the size of the
+        /// cached thumbnails.
         ///
-        /// Example: 600x400 = 600 pixels wide and 400 pixels tall.
-        /// TODO: make this a fraction of the screen size and fix the docs.
-        property int width: 600
-        property int height: 400
+        /// Example: widthRatio 0.42 and heightRatio 0.28 on a 1440px-tall
+        /// monitor produce 605 x 403 thumbnails.
+        property real widthRatio: 0.42
+        property real heightRatio: 0.28
 
         /// Rounded corner radius in pixels.
         ///
@@ -324,13 +326,6 @@ Singleton {
 
     /// Layout and animation of the horizontal coverflow row.
     property QtObject strip: QtObject {
-        /// Height of the center tile as a fraction of the screen height.
-        ///
-        /// Other tile sizes derive from it.
-        ///
-        /// Example: 0.28 = 28% of the screen height.
-        property real itemHeightRatio: 0.28
-
         /// What happens at the ends of the list.
         ///
         /// Possible values:

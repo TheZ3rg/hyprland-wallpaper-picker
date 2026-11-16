@@ -20,6 +20,10 @@ Item {
     // { path, thumb, aspect, preview, live, video, animated }.
     property var items: []
 
+    // Logical height of the monitor the picker opened on. Thumbnail sizes are
+    // derived from the configured ratios and this height.
+    property int screenHeight: 0
+
     property bool scanning: false
 
     // False until a scan has completed. The picker uses it to disable Enter,
@@ -35,6 +39,17 @@ Item {
     signal loaded()
 
     readonly property string script: Quickshell.shellPath("scripts/sync-thumbs.sh")
+
+    // Thumbnail size derived from the configured ratios. The height is frozen
+    // at the first known screen size, so focus changes do not regenerate the
+    // cache while the picker is open.
+    property int _generationHeight: 0
+    readonly property int thumbHeight:
+        Math.max(1, Math.round(root._generationHeight
+            * Config.thumbnails.heightRatio))
+    readonly property int thumbWidth:
+        Math.max(1, Math.round(root._generationHeight
+            * Config.thumbnails.widthRatio))
 
     // Preview size derived from the configured crop and center card scale.
     readonly property int previewHeight: Math.max(1, Config.previews.height)
@@ -65,7 +80,17 @@ Item {
         return "file://" + path.split("/").map(encodeURIComponent).join("/");
     }
 
+    function beginScan() {
+        if (root._generationHeight > 0 || root.screenHeight <= 0)
+            return;
+        root._generationHeight = root.screenHeight;
+        root.rescan();
+    }
+
     function rescan() {
+        if (root._generationHeight <= 0)
+            return;
+
         // Drop stale entries immediately: those files may no longer exist.
         root._buffer = [];
         root.items = [];
@@ -91,8 +116,8 @@ Item {
             "bash", root.script,
             Config.source.dir,
             Config.thumbnails.cacheDir,
-            String(Config.thumbnails.width),
-            String(Config.thumbnails.height),
+            String(root.thumbWidth),
+            String(root.thumbHeight),
             Config.awww.extensions.join(","),
             String(Config.thumbnails.cornerRadius),
             Config.previews.enabled ? Config.previews.cacheDir : "",
@@ -183,5 +208,7 @@ Item {
         function onDirChanged() { root.rescan() }
     }
 
-    Component.onCompleted: rescan()
+    onScreenHeightChanged: root.beginScan()
+
+    Component.onCompleted: root.beginScan()
 }

@@ -70,8 +70,8 @@ Item {
             ["", "full", "max"]);
 
         // Thumbnails
-        positive(out, "thumbnails.width", Config.thumbnails.width);
-        positive(out, "thumbnails.height", Config.thumbnails.height);
+        positive(out, "thumbnails.widthRatio", Config.thumbnails.widthRatio);
+        positive(out, "thumbnails.heightRatio", Config.thumbnails.heightRatio);
         nonNegative(out, "thumbnails.cornerRadius",
             Config.thumbnails.cornerRadius);
         nonNegative(out, "thumbnails.fadeInDuration",
@@ -93,7 +93,6 @@ Item {
         // Strip
         oneOf(out, "strip.loopMode", Config.strip.loopMode,
             ["endless", "off"]);
-        positive(out, "strip.itemHeightRatio", Config.strip.itemHeightRatio);
         nonNegative(out, "strip.spacing", Config.strip.spacing);
         nonNegative(out, "strip.selectionDuration",
             Config.strip.selectionDuration);
