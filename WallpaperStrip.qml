@@ -47,7 +47,8 @@ Item {
     readonly property bool endless: root.loopMode === "endless"
     readonly property real baseHeight: height * Config.thumbnails.heightRatio
     readonly property real baseWidth: height * Config.thumbnails.widthRatio
-    readonly property real gap: Config.strip.spacing
+    readonly property real gap:
+        Math.max(0, Math.round(height * Config.strip.spacingRatio))
 
     // Position of the current target in index units.
     readonly property real targetPosition: root.endless

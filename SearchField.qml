@@ -40,7 +40,8 @@ Rectangle {
         return (v === "top" || v === "center" || v === "bottom") ? v : "top";
     }
 
-    readonly property int edgeMargin: Math.max(0, Config.search.margin)
+    readonly property int edgeMargin:
+        Math.max(0, Math.round(parent.height * Config.search.marginRatio))
 
     width: Math.max(140, Math.min(420, parent.width - 2 * root.edgeMargin))
     height: 44

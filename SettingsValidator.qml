@@ -91,7 +91,7 @@ Item {
         // Strip
         oneOf(out, "strip.loopMode", Config.strip.loopMode,
             ["endless", "off"]);
-        nonNegative(out, "strip.spacing", Config.strip.spacing);
+        nonNegative(out, "strip.spacingRatio", Config.strip.spacingRatio);
         nonNegative(out, "strip.selectionDuration",
             Config.strip.selectionDuration);
         nonNegative(out, "strip.scrollDuration", Config.strip.scrollDuration);
@@ -115,7 +115,7 @@ Item {
             Config.search.horizontalAlignment, ["left", "center", "right"]);
         oneOf(out, "search.verticalAlignment",
             Config.search.verticalAlignment, ["top", "center", "bottom"]);
-        nonNegative(out, "search.margin", Config.search.margin);
+        nonNegative(out, "search.marginRatio", Config.search.marginRatio);
         between(out, "search.unfocusedOpacity",
             Config.search.unfocusedOpacity, 0, 1);
         nonNegative(out, "search.animationDuration",

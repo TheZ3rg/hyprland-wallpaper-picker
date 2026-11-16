@@ -121,10 +121,10 @@ documented there. The main groups are:
 - mpvpaper: video extensions, layer, mpv options and pausing when hidden;
 - thumbnail size and quality, cache and fade-in;
 - static preview size and quality, and animated preview clips;
-- strip height, pixel spacing, looping, coverflow/center-card scaling, the
+- strip height, spacing ratio, looping, coverflow/center-card scaling, the
   `LIVE` badge and selection/scroll animation durations;
 - overlay layer, background dim, informational messages and close behaviour;
-- search mode, field position, margin, opacity and animation duration.
+- search mode, field position, margin ratio, opacity and animation duration.
 
 The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 

@@ -326,11 +326,10 @@ Singleton {
         /// Invalid values raise an error and block applying.
         property string loopMode: "endless"
 
-        /// Gap between tiles in pixels.
+        /// Gap between tiles as a fraction of the monitor height.
         ///
-        /// Unlike tile sizes, it does not scale with the screen.
-        /// TODO: make this a fraction of the screen size and fix the docs.
-        property int spacing: 8
+        /// Example: 0.0056 = about 8 pixels on a 1440px-tall monitor.
+        property real spacingRatio: 0.0056
 
         /// Time for an input-driven move, in milliseconds.
         ///
@@ -434,11 +433,11 @@ Singleton {
         /// Invalid values raise an error and block applying.
         property string verticalAlignment: "bottom"
 
-        /// Distance from the chosen screen edges, in pixels.
+        /// Distance from the chosen screen edges as a fraction of the monitor
+        /// height.
         ///
-        /// Example: 15 = 15 pixels from the edge.
-        /// TODO: make this a fraction of the screen size and fix the docs.
-        property int margin: 15
+        /// Example: 0.0104 = about 15 pixels on a 1440px-tall monitor.
+        property real marginRatio: 0.0104
 
         /// Opacity of the search field when it is not being edited.
         ///

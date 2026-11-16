@@ -339,7 +339,7 @@ PanelWindow {
         // Reserve the bottom band while the search field is anchored there,
         // so the two never overlap.
         anchors.bottomMargin: Config.search.verticalAlignment === "bottom"
-            ? Math.max(32, Math.max(0, Config.search.margin) + searchField.height + 12)
+            ? Math.max(32, searchField.edgeMargin + searchField.height + 12)
             : 32
         width: Math.min(parent.width - 64, Math.max(180, statusMetrics.width + 32))
         height: statusText.contentHeight + 24
