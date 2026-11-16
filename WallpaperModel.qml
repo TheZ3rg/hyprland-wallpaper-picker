@@ -179,8 +179,8 @@ Item {
     }
 
     Connections {
-        target: Config
-        function onWallpaperDirChanged() { root.rescan() }
+        target: Config.source
+        function onDirChanged() { root.rescan() }
     }
 
     Component.onCompleted: rescan()
