@@ -103,17 +103,6 @@ Item {
     // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
-    readonly property real previewAspect:
-        Math.max(0.05,
-            (Config.thumbnails.widthRatio * Config.previews.widthScale)
-            / Math.max(0.001,
-                Config.thumbnails.heightRatio * Config.previews.heightScale))
-    readonly property real centerAspect:
-        Math.max(0.05, previewAspect
-            * (Config.strip.coverflowEnabled
-                ? Config.strip.centerWidthScale
-                : 1))
-
     // Model index for a window index. Finite modes clamp; endless mode wraps
     // around the list.
     function itemIndexFor(virtualIndex) {
@@ -462,22 +451,29 @@ Item {
             const s = scaleForIndex(i);
 
             // The center card's extra size is part of the layout, so the
-            // neighbours slide outward instead of being covered. Each tile
-            // widens based on its distance from the center and its own cached
-            // preview; there is no separate scroll mode.
+            // neighbours slide outward instead of being covered. The card
+            // grows from the base tile size to the configured preview size;
+            // width and height are independent multipliers.
             const centerWeight = Math.max(0, 1 - Math.abs(i - position));
+            const item = root.itemAt(i);
+            const hasPreview = item && item.preview !== "";
+            const targetWidth = hasPreview
+                ? baseWidth * Config.previews.widthScale
+                : baseWidth;
+            const targetHeight = hasPreview
+                ? baseHeight * Config.previews.heightScale
+                : baseHeight;
+            const widthFactor = Config.strip.coverflowEnabled
+                ? 1 + (Config.strip.centerWidthScale - 1) * centerWeight
+                : 1;
             const heightFactor = Config.strip.coverflowEnabled
                 ? 1 + (Config.strip.centerHeightScale - 1) * centerWeight
                 : 1;
 
-            const item = root.itemAt(i);
-            const a = (item && item.aspect) ? item.aspect : 0.7;
-            const hasPreview = item && item.preview !== "";
-            const wideAspect = hasPreview ? root.centerAspect : a;
-            const aspect = a + (wideAspect - a) * centerWeight;
-
-            const h = baseHeight * s * heightFactor;
-            const w = h * aspect;
+            const w = (baseWidth + (targetWidth - baseWidth) * centerWeight)
+                * s * widthFactor;
+            const h = (baseHeight + (targetHeight - baseHeight) * centerWeight)
+                * s * heightFactor;
             out.push({ x: x, w: w, h: h, s: s });
             x += w + gap;
         }
