@@ -218,7 +218,7 @@ Singleton {
         ///
         /// Example: heightRatio 0.35 and widthRatio 0.28.
         property real heightRatio: 0.35
-        property real widthRatio: 0.28
+        property real widthRatio: 0.20
 
         /// Quality of the cached thumbnails, 1..100.
         ///
@@ -259,21 +259,18 @@ Singleton {
         /// Preview size as multiples of the thumbnail size.
         ///
         /// widthScale and heightScale multiply the thumbnail width and height
-        /// for both the center card and its cached preview. They are display
-        /// multipliers, not just resolution.
-        ///
-        /// Higher values increase card size, scan time, cache size and memory.
+        /// for both the center card and its cached preview.
         ///
         /// Example: 1.2 and 1.2 make the center card 1.2x the thumbnail size.
-        property real heightScale: 1.2
-        property real widthScale: 1.2
+        property real heightScale: 1.15
+        property real widthScale: 2.4
 
         /// Quality of the cached static preview image, 1..100.
         ///
         /// Higher values are sharper but increase cache size and scan time.
         /// This does not affect the animated clips or the wallpaper displayed
         /// on the desktop.
-        property int quality: 88
+        property int quality: 85
 
         /// Cache directory for previews.
         ///
@@ -290,7 +287,7 @@ Singleton {
         /// static enlarged image in the center card.
         property QtObject animated: QtObject {
             /// Enable animated previews.
-            property bool enabled: false
+            property bool enabled: true
 
             /// Preview clip length in milliseconds.
             ///
@@ -309,7 +306,7 @@ Singleton {
             /// Higher values keep more detail but make the cached WebP clips
             /// larger and slower to decode. This does not affect the static
             /// preview or the wallpaper displayed on the desktop.
-            property int quality: 60
+            property int quality: 85
         }
     }
 
@@ -328,8 +325,8 @@ Singleton {
 
         /// Gap between tiles as a fraction of the monitor height.
         ///
-        /// Example: 0.0056 = about 8 pixels on a 1440px-tall monitor.
-        property real spacingRatio: 0.0056
+        /// Example: 0.006 = 0.6% of the monitor height.
+        property real spacingRatio: 0.006
 
         /// Time for an input-driven move, in milliseconds.
         ///
@@ -371,6 +368,7 @@ Singleton {
             /// it. They are ignored unless enabled is true.
             ///
             /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
+            /// TODO: remove or change these; they are most likely redundant.
             property real centerWidthScale: 1.0
             property real centerHeightScale: 1.0
         }
@@ -439,8 +437,8 @@ Singleton {
         /// Distance from the chosen screen edges as a fraction of the monitor
         /// height.
         ///
-        /// Example: 0.0104 = about 15 pixels on a 1440px-tall monitor.
-        property real marginRatio: 0.0104
+        /// Example: 0.01 = 1% of the monitor height.
+        property real marginRatio: 0.01
 
         /// Opacity of the search field when it is not being edited.
         ///
