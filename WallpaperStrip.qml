@@ -103,8 +103,16 @@ Item {
     // re-enters the window starts opaque instead of fading in again.
     property var decodedUrls: ({})
 
+    readonly property real previewAspect:
+        Math.max(0.05,
+            (Config.thumbnails.widthRatio * Config.previews.widthScale)
+            / Math.max(0.001,
+                Config.thumbnails.heightRatio * Config.previews.heightScale))
     readonly property real centerAspect:
-        Math.max(0.05, Config.previews.aspectRatio * Config.strip.centerWidthScale)
+        Math.max(0.05, previewAspect
+            * (Config.strip.coverflowEnabled
+                ? Config.strip.centerWidthScale
+                : 1))
 
     // Model index for a window index. Finite modes clamp; endless mode wraps
     // around the list.
@@ -458,8 +466,9 @@ Item {
             // widens based on its distance from the center and its own cached
             // preview; there is no separate scroll mode.
             const centerWeight = Math.max(0, 1 - Math.abs(i - position));
-            const heightFactor =
-                1 + (Config.strip.centerHeightScale - 1) * centerWeight;
+            const heightFactor = Config.strip.coverflowEnabled
+                ? 1 + (Config.strip.centerHeightScale - 1) * centerWeight
+                : 1;
 
             const item = root.itemAt(i);
             const a = (item && item.aspect) ? item.aspect : 0.7;

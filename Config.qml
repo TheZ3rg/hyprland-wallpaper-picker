@@ -258,20 +258,16 @@ Singleton {
         /// Enable the enlarged image.
         property bool enabled: false
 
-        /// Shape of the preview, as width / height.
+        /// Preview size as multiples of the thumbnail size.
         ///
-        /// 0.8 = 4:5 portrait, 0.75 = 3:4, 1.0 = square, 1.33 = 4:3.
-        /// strip.centerWidthScale multiplies this.
-        /// TODO: looks strange, needs corrections.
-        property real aspectRatio: 1.33
-
-        /// Height of the preview in pixels.
+        /// widthScale multiplies the thumbnail width and heightScale its height.
+        /// The resulting aspect is also used by the center card. Higher values
+        /// are sharper but increase scan time, cache size and memory.
         ///
-        /// The width follows aspectRatio. Higher values are sharper but
-        /// increase scan time, cache size and memory. Keep it at least as tall
-        /// as the center card to avoid upscaling.
-        /// TODO: looks strange, why this exists when there is aspectRatio?
-        property int height: 1000
+        /// Example: 4.5 and 2.0 on a 403 x 504 thumbnail produce an
+        /// 1814 x 1008 preview.
+        property real widthScale: 4.5
+        property real heightScale: 2.0
 
         /// Cache directory for previews.
         ///
@@ -304,11 +300,9 @@ Singleton {
 
             /// Clip width in pixels.
             ///
-            /// The height follows the center card aspect:
-            /// previews.aspectRatio * strip.centerWidthScale.
-            /// This is intentionally smaller than previews.height because an
-            /// animated clip decodes many frames; a few hundred pixels is
-            /// usually enough.
+            /// The height follows the center card aspect. This is intentionally
+            /// smaller than the static preview because an animated clip
+            /// decodes many frames; a few hundred pixels is usually enough.
             ///
             /// Example: 600 = 600 pixels wide.
             /// TODO: make this a fraction of the screen width and fix the docs.
@@ -374,11 +368,11 @@ Singleton {
 
         /// Extra size multipliers for the center card.
         ///
-        /// centerWidthScale widens the card (it multiplies previews.aspectRatio);
-        /// centerHeightScale lengthens it.
+        /// centerWidthScale widens the card and centerHeightScale lengthens it.
+        /// They are ignored unless coverflowEnabled is true.
         ///
         /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
-        property real centerWidthScale: 1.35
+        property real centerWidthScale: 1.0
         property real centerHeightScale: 1.0
 
         /// Show the "LIVE" badge on video and GIF tiles.

@@ -80,8 +80,8 @@ Item {
             Config.thumbnails.videoPosterSeek);
 
         // Previews
-        positive(out, "previews.aspectRatio", Config.previews.aspectRatio);
-        positive(out, "previews.height", Config.previews.height);
+        positive(out, "previews.widthScale", Config.previews.widthScale);
+        positive(out, "previews.heightScale", Config.previews.heightScale);
         positive(out, "previews.animated.width",
             Config.previews.animated.width);
         positive(out, "previews.animated.duration",

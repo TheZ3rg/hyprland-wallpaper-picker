@@ -51,17 +51,25 @@ Item {
         Math.max(1, Math.round(root._generationHeight
             * Config.thumbnails.widthRatio))
 
-    // Preview size derived from the configured crop and center card scale.
-    readonly property int previewHeight: Math.max(1, Config.previews.height)
+    // Preview size is a multiple of the thumbnail size. Center width scaling
+    // applies only in coverflow mode.
+    readonly property real previewAspect:
+        Math.max(0.05,
+            (Config.thumbnails.widthRatio * Config.previews.widthScale)
+            / Math.max(0.001,
+                Config.thumbnails.heightRatio * Config.previews.heightScale))
+    readonly property real centerAspect:
+        Math.max(0.05, previewAspect
+            * (Config.strip.coverflowEnabled
+                ? Config.strip.centerWidthScale
+                : 1))
+    readonly property int previewHeight:
+        Math.max(1, Math.round(thumbHeight * Config.previews.heightScale))
     readonly property int previewWidth:
-        Math.max(1, Math.round(previewHeight * Config.previews.aspectRatio
-            * Config.strip.centerWidthScale))
+        Math.max(1, Math.round(previewHeight * centerAspect))
 
     // Animated clips are smaller than static previews; their height follows
     // the same preview aspect.
-    readonly property real centerAspect:
-        Math.max(0.05, Config.previews.aspectRatio
-            * Config.strip.centerWidthScale)
     readonly property int livePreviewWidth:
         Math.max(1, Config.previews.animated.width)
     readonly property int livePreviewHeight:
