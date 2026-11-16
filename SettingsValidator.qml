@@ -95,13 +95,16 @@ Item {
         nonNegative(out, "strip.selectionDuration",
             Config.strip.selectionDuration);
         nonNegative(out, "strip.scrollDuration", Config.strip.scrollDuration);
-        positive(out, "strip.centerScale", Config.strip.centerScale);
-        positive(out, "strip.edgeScale", Config.strip.edgeScale);
-        positive(out, "strip.falloffRange", Config.strip.falloffRange);
-        positive(out, "strip.centerWidthScale",
-            Config.strip.centerWidthScale);
-        positive(out, "strip.centerHeightScale",
-            Config.strip.centerHeightScale);
+        positive(out, "strip.coverflow.centerScale",
+            Config.strip.coverflow.centerScale);
+        positive(out, "strip.coverflow.edgeScale",
+            Config.strip.coverflow.edgeScale);
+        positive(out, "strip.coverflow.falloffRange",
+            Config.strip.coverflow.falloffRange);
+        positive(out, "strip.coverflow.centerWidthScale",
+            Config.strip.coverflow.centerWidthScale);
+        positive(out, "strip.coverflow.centerHeightScale",
+            Config.strip.coverflow.centerHeightScale);
 
         // Overlay
         oneOf(out, "overlay.layer", Config.overlay.layer,

@@ -60,8 +60,8 @@ Item {
                 Config.thumbnails.heightRatio * Config.previews.heightScale))
     readonly property real centerAspect:
         Math.max(0.05, previewAspect
-            * (Config.strip.coverflowEnabled
-                ? Config.strip.centerWidthScale
+            * (Config.strip.coverflow.enabled
+                ? Config.strip.coverflow.centerWidthScale
                 : 1))
     readonly property int previewHeight:
         Math.max(1, Math.round(thumbHeight * Config.previews.heightScale))

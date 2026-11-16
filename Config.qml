@@ -315,7 +315,7 @@ Singleton {
 
     // ── STRIP AND COVERFLOW ───────────────────────────────────
 
-    /// Layout and animation of the horizontal coverflow row.
+    /// Layout and animation of the horizontal wallpaper row.
     property QtObject strip: QtObject {
         /// What happens at the ends of the list.
         ///
@@ -345,32 +345,35 @@ Singleton {
         /// Example: 600 = 0.6 seconds; 0 makes the opening scroll instant.
         property int scrollDuration: 600
 
-        /// Scale tiles down toward the strip edges (the coverflow effect).
+        /// Coverflow scaling and center-card sizing.
         ///
-        /// Disable to keep every tile at the same scale
-        /// TODO: make coverflow an QtObject with related properties.
-        property bool coverflowEnabled: false
+        /// Disable to keep every tile at the same scale. The other coverflow
+        /// settings are ignored when disabled.
+        property QtObject coverflow: QtObject {
+            /// Scale tiles down toward the strip edges.
+            property bool enabled: false
 
-        /// Scale of the center tile and of tiles falloffRange slots away.
-        ///
-        /// 1.35 = 35% larger than the base tile; 0.6 = 60%.
-        property real centerScale: 1.35
-        property real edgeScale: 0.6
+            /// Scale of the center tile and of tiles falloffRange slots away.
+            ///
+            /// 1.35 = 35% larger than the base tile; 0.6 = 60%.
+            property real centerScale: 1.35
+            property real edgeScale: 0.6
 
-        /// Number of tiles over which the scale falls from centerScale to
-        /// edgeScale.
-        ///
-        /// Example: 9 = the 9th tile away from the centre is at edgeScale.
-        property real falloffRange: 9.0
+            /// Number of tiles over which the scale falls from centerScale to
+            /// edgeScale.
+            ///
+            /// Example: 9 = the 9th tile away from the centre is at edgeScale.
+            property real falloffRange: 9.0
 
-        /// Extra size multipliers for the center card.
-        ///
-        /// centerWidthScale widens the card and centerHeightScale lengthens it.
-        /// They are ignored unless coverflowEnabled is true.
-        ///
-        /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
-        property real centerWidthScale: 1.0
-        property real centerHeightScale: 1.0
+            /// Extra size multipliers for the center card.
+            ///
+            /// centerWidthScale widens the card and centerHeightScale lengthens
+            /// it. They are ignored unless enabled is true.
+            ///
+            /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
+            property real centerWidthScale: 1.0
+            property real centerHeightScale: 1.0
+        }
 
         /// Show the "LIVE" badge on video and GIF tiles.
         property bool showLiveBadge: true

@@ -80,7 +80,7 @@ Item {
     readonly property bool hasGeometry: width > 0 && baseHeight > 0
 
     readonly property real minTileWidth:
-        Math.max(1, baseWidth * Math.max(0.05, Config.strip.edgeScale))
+        Math.max(1, baseWidth * Math.max(0.05, Config.strip.coverflow.edgeScale))
 
     readonly property int visibleRadius: hasGeometry
         ? Math.max(preloadTiles,
@@ -432,12 +432,14 @@ Item {
     }
 
     function scaleForIndex(i) {
-        if (!Config.strip.coverflowEnabled)
+        if (!Config.strip.coverflow.enabled)
             return 1;
         const d = Math.abs(i - position);
-        const t = Math.min(1, d / Math.max(0.001, Config.strip.falloffRange));
-        return Config.strip.centerScale
-            + (Config.strip.edgeScale - Config.strip.centerScale) * t;
+        const t = Math.min(1,
+            d / Math.max(0.001, Config.strip.coverflow.falloffRange));
+        return Config.strip.coverflow.centerScale
+            + (Config.strip.coverflow.edgeScale
+                - Config.strip.coverflow.centerScale) * t;
     }
 
     // Layout for the current window, recomputed on every frame of the
@@ -464,11 +466,13 @@ Item {
             const targetHeight = hasPreview
                 ? baseHeight * Config.previews.heightScale
                 : baseHeight;
-            const widthFactor = Config.strip.coverflowEnabled
-                ? 1 + (Config.strip.centerWidthScale - 1) * centerWeight
+            const widthFactor = Config.strip.coverflow.enabled
+                ? 1 + (Config.strip.coverflow.centerWidthScale - 1)
+                    * centerWeight
                 : 1;
-            const heightFactor = Config.strip.coverflowEnabled
-                ? 1 + (Config.strip.centerHeightScale - 1) * centerWeight
+            const heightFactor = Config.strip.coverflow.enabled
+                ? 1 + (Config.strip.coverflow.centerHeightScale - 1)
+                    * centerWeight
                 : 1;
 
             const w = (baseWidth + (targetWidth - baseWidth) * centerWeight)
