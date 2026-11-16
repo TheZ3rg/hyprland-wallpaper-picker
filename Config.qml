@@ -256,7 +256,7 @@ Singleton {
     /// previews.animated.
     property QtObject previews: QtObject {
         /// Enable the enlarged image.
-        property bool enabled: true
+        property bool enabled: false
 
         /// Shape of the preview, as width / height.
         ///
