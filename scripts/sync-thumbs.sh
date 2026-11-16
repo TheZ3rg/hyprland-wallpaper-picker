@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# Usage: sync-thumbs.sh <wallpaperDir> <cacheDir> <w> <h> \
-#   <imageExts> [cornerRadius] [previewDir] [previewWidth] [previewHeight] \
-#   [videoExts] [animatedPreviews] [previewWidth] [previewHeight] \
-#   [previewDurationMs] [previewFps] [previewQuality] [posterSeek]
+# Usage: sync-thumbs.sh <wallpaperDir> <cacheDir> <w> <h> <thumbQuality> \
+#   <imageExts> [previewDir] [previewWidth] [previewHeight] [previewQuality] \
+#   [videoExts] [animatedPreviews] [animWidth] [animHeight] \
+#   [animDurationMs] [animFps] [animQuality] [posterSeek]
 #
 # Scans wallpaperDir (non-recursive), generates or reuses cached thumbnails
 # and focused previews, and prints one tab-separated manifest row per
@@ -31,19 +31,20 @@ DIR="${1:-}"
 CACHE="${2:-}"
 W="${3:-420}"
 H="${4:-640}"
-EXTS="${5:-jpg,jpeg,png,webp}"
-RADIUS="${6:-0}"
+THUMB_QUALITY="${5:-85}"
+EXTS="${6:-jpg,jpeg,png,webp}"
 PREVIEW_DIR="${7:-}"
 PREVIEW_W="${8:-}"
 PREVIEW_H="${9:-}"
-VIDEO_EXTS="${10:-}"
-ANIMATED_PREVIEWS="${11:-0}"
-ANIM_W="${12:-}"
-ANIM_H="${13:-}"
-ANIM_DURATION_MS="${14:-}"
-ANIM_FPS="${15:-}"
-ANIM_QUALITY="${16:-}"
-POSTER_SEEK="${17:-1}"
+PREVIEW_QUALITY="${10:-88}"
+VIDEO_EXTS="${11:-}"
+ANIMATED_PREVIEWS="${12:-0}"
+ANIM_W="${13:-}"
+ANIM_H="${14:-}"
+ANIM_DURATION_MS="${15:-}"
+ANIM_FPS="${16:-}"
+ANIM_QUALITY="${17:-}"
+POSTER_SEEK="${18:-1}"
 
 # Thumbnails always use a centered cover crop. Kept in the cache key so
 # thumbnails generated before preserve mode was removed still match.
@@ -85,8 +86,13 @@ if ! [[ "$W" =~ ^[1-9][0-9]*$ ]] || ! [[ "$H" =~ ^[1-9][0-9]*$ ]]; then
     exit 2
 fi
 
-if ! [[ "$RADIUS" =~ ^[0-9]+$ ]]; then
-    echo "sync-thumbs.sh: invalid corner radius: $RADIUS" >&2
+if ! [[ "$THUMB_QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
+    echo "sync-thumbs.sh: invalid thumbnail quality: $THUMB_QUALITY" >&2
+    exit 2
+fi
+
+if ! [[ "$PREVIEW_QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
+    echo "sync-thumbs.sh: invalid preview quality: $PREVIEW_QUALITY" >&2
     exit 2
 fi
 
@@ -139,12 +145,7 @@ if [ "$animated_enabled" -eq 1 ] && [ "$HAS_FFMPEG" -eq 1 ]; then
     fi
 fi
 
-# Rounded corners need an alpha channel, so those thumbnails must be PNG.
-if [ "$RADIUS" -gt 0 ]; then
-    EXT="png"
-else
-    EXT="jpg"
-fi
+EXT="jpg"
 
 WORK="$(mktemp -d "$CACHE/.sync-thumbs.XXXXXX")" || {
     echo "sync-thumbs.sh: cannot create a temporary directory in $CACHE" >&2
@@ -191,7 +192,7 @@ while IFS= read -r -d '' f; do
     # reuse stale thumbnails. The poster frame is part of a video's identity.
     key_src="$f"
     [ "$is_video" -eq 1 ] && key_src="$f|seek$POSTER_SEEK"
-    key="$(printf '%s' "v${CACHE_VERSION}|$key_src|$MODE|${W}x${H}|r${RADIUS}" | md5sum)"
+    key="$(printf '%s' "v${CACHE_VERSION}|$key_src|$MODE|${W}x${H}|q${THUMB_QUALITY}" | md5sum)"
     key="${key%% *}"
     out="$CACHE/$key.$EXT"
     tmp="$WORK/thumb.png"
@@ -233,23 +234,10 @@ while IFS= read -r -d '' f; do
             continue
         fi
 
-        if [ "$RADIUS" -gt 0 ]; then
-            # Bake the rounded corners into the alpha channel; QML then needs
-            # no runtime mask.
-            if ! magick "$tmp" \
-                \( -size "${tw}x${th}" xc:none -fill white \
-                   -draw "roundrectangle 0,0 $((tw - 1)),$((th - 1)) ${RADIUS},${RADIUS}" \) \
-                -alpha off -compose CopyOpacity -composite "$final_tmp"; then
-                echo "sync-thumbs.sh: failed to round thumbnail corners: $f" >&2
-                failed=$((failed + 1))
-                continue
-            fi
-        else
-            if ! magick "$tmp" -quality 85 "$final_tmp"; then
-                echo "sync-thumbs.sh: failed to write thumbnail: $f" >&2
-                failed=$((failed + 1))
-                continue
-            fi
+        if ! magick "$tmp" -quality "$THUMB_QUALITY" "$final_tmp"; then
+            echo "sync-thumbs.sh: failed to write thumbnail: $f" >&2
+            failed=$((failed + 1))
+            continue
         fi
 
         if ! mv -f -- "$final_tmp" "$out"; then
@@ -287,13 +275,14 @@ while IFS= read -r -d '' f; do
             if [ "$is_video" -eq 1 ]; then
                 if ! preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" still \
                     "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                    "$POSTER_SEEK")"; then
+                    "$POSTER_SEEK" "$PREVIEW_QUALITY")"; then
                     preview_path=""
                     echo "sync-thumbs.sh: failed to cache preview: $f" >&2
                 fi
             else
                 if ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
-                    "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H")"; then
+                    "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
+                    "$PREVIEW_QUALITY")"; then
                     preview_path=""
                     echo "sync-thumbs.sh: failed to cache preview: $f" >&2
                 fi

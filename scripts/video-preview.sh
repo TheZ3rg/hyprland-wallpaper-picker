@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Usage:
-#   video-preview.sh still <source> <cacheDir> <width> <height> <seekSeconds>
+#   video-preview.sh still <source> <cacheDir> <width> <height> <seekSeconds> \
+#       [quality]
 #   video-preview.sh animated <source> <cacheDir> <width> <height> \
 #       <durationMs> <fps> <quality> [startSeconds]
 #
@@ -54,7 +55,14 @@ trap 'rm -rf -- "$WORK"' EXIT
 
 if [ "$MODE" = "still" ]; then
     SEEK="${6:-0}"
-    key="$(printf '%s' "v${VIDEO_PREVIEW_VERSION}|still|$SRC|${W}x${H}|s$SEEK" \
+    QUALITY="${7:-88}"
+
+    if ! [[ "$QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
+        echo "video-preview.sh: invalid quality: $QUALITY" >&2
+        exit 2
+    fi
+
+    key="$(printf '%s' "v${VIDEO_PREVIEW_VERSION}|still|$SRC|${W}x${H}|s$SEEK|q$QUALITY" \
         | md5sum | cut -d' ' -f1)"
     out="$CACHE/$key.jpg"
 
@@ -67,7 +75,7 @@ if [ "$MODE" = "still" ]; then
 
         tmp="$WORK/preview.jpg"
         if ! nice -n 10 magick "$frame[0]" -auto-orient -resize "${W}x${H}^" \
-            -gravity center -extent "${W}x${H}" -quality 88 "$tmp"; then
+            -gravity center -extent "${W}x${H}" -quality "$QUALITY" "$tmp"; then
             echo "video-preview.sh: failed to generate preview: $SRC" >&2
             exit 1
         fi

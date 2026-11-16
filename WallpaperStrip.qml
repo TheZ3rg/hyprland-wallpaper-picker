@@ -644,9 +644,6 @@ Item {
             // A faint outline keeps dark wallpapers distinguishable.
             Rectangle {
                 anchors.fill: parent
-                radius: Config.thumbnails.cornerRadius > 0
-                    ? Config.thumbnails.cornerRadius * (cell.width / Math.max(1, root.baseWidth))
-                    : 0
                 color: "transparent"
                 border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.10)

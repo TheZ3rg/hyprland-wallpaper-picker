@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Usage: preview-thumb.sh <source> <cacheDir> <width> <height>
+# Usage: preview-thumb.sh <source> <cacheDir> <width> <height> [quality]
 #
 # Generates or reuses a wider, higher-resolution crop for the focused tile and
 # prints the cached preview path on success. The crop is centred and covers
 # width x height, like the strip thumbnails, but comes from the original image
-# and uses the requested aspect and size.
+# and uses the requested aspect and size. Quality defaults to 88.
 
 set -uo pipefail
 
@@ -16,6 +16,7 @@ SRC="${1:-}"
 CACHE="${2:-}"
 W="${3:-}"
 H="${4:-}"
+QUALITY="${5:-88}"
 
 if [ -z "$SRC" ] || [ -z "$CACHE" ]; then
     echo "preview-thumb.sh: missing arguments" >&2
@@ -32,6 +33,11 @@ if ! [[ "$W" =~ ^[1-9][0-9]*$ ]] || ! [[ "$H" =~ ^[1-9][0-9]*$ ]]; then
     exit 2
 fi
 
+if ! [[ "$QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
+    echo "preview-thumb.sh: invalid quality: $QUALITY" >&2
+    exit 2
+fi
+
 command -v magick >/dev/null 2>&1 || {
     echo "preview-thumb.sh: ImageMagick 7 (magick) is required" >&2
     exit 1
@@ -42,7 +48,7 @@ mkdir -p -- "$CACHE" || {
     exit 1
 }
 
-key="$(preview_key "$SRC" "$W" "$H")"
+key="$(preview_key "$SRC" "$W" "$H" "$QUALITY")"
 out="$CACHE/$key.jpg"
 
 if [ ! -f "$out" ] || [ "$SRC" -nt "$out" ]; then
@@ -57,7 +63,7 @@ if [ ! -f "$out" ] || [ "$SRC" -nt "$out" ]; then
     # Render to a temporary file so an interrupted convert never leaves a
     # truncated preview in the cache.
     if ! nice -n 10 magick "$SRC[0]" -auto-orient -resize "${W}x${H}^" \
-        -gravity center -extent "${W}x${H}" -quality 88 "$tmp"; then
+        -gravity center -extent "${W}x${H}" -quality "$QUALITY" "$tmp"; then
         echo "preview-thumb.sh: failed to generate preview: $SRC" >&2
         exit 1
     fi

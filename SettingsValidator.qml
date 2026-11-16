@@ -72,8 +72,7 @@ Item {
         // Thumbnails
         positive(out, "thumbnails.widthRatio", Config.thumbnails.widthRatio);
         positive(out, "thumbnails.heightRatio", Config.thumbnails.heightRatio);
-        nonNegative(out, "thumbnails.cornerRadius",
-            Config.thumbnails.cornerRadius);
+        between(out, "thumbnails.quality", Config.thumbnails.quality, 1, 100);
         nonNegative(out, "thumbnails.fadeInDuration",
             Config.thumbnails.fadeInDuration);
         nonNegative(out, "thumbnails.videoPosterSeek",
@@ -82,6 +81,7 @@ Item {
         // Previews
         positive(out, "previews.widthScale", Config.previews.widthScale);
         positive(out, "previews.heightScale", Config.previews.heightScale);
+        between(out, "previews.quality", Config.previews.quality, 1, 100);
         positive(out, "previews.animated.duration",
             Config.previews.animated.duration);
         positive(out, "previews.animated.fps", Config.previews.animated.fps);

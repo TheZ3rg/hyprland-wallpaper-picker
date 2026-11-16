@@ -208,7 +208,7 @@ Singleton {
     /// Small images shown in the strip.
     ///
     /// They are generated during the scan and cached. Changing the size or
-    /// corner radius regenerates them.
+    /// quality regenerates them.
     property QtObject thumbnails: QtObject {
         /// Base tile size as fractions of the monitor height.
         ///
@@ -220,13 +220,11 @@ Singleton {
         property real heightRatio: 0.35
         property real widthRatio: 0.28
 
-        /// Rounded corner radius in pixels.
+        /// Quality of the cached thumbnails, 1..100.
         ///
-        /// Baked into the cached thumbnail; changing it regenerates the cache.
-        /// 0 keeps rectangular corners. The radius does not scale with the
-        /// screen.
-        /// TODO: experimental function, needs testing and fixing.
-        property int cornerRadius: 0
+        /// Higher values are sharper but increase cache size and scan time.
+        /// This does not affect the wallpaper displayed on the desktop.
+        property int quality: 85
 
         /// Where thumbnails and previews are cached.
         ///
@@ -251,8 +249,8 @@ Singleton {
 
     /// The larger image shown in the center card.
     ///
-    /// It is generated during the scan and cached. Changing its size or aspect
-    /// regenerates it. This is independent of the animated clips in
+    /// It is generated during the scan and cached. Changing its size, aspect or
+    /// quality regenerates it. This is independent of the animated clips in
     /// previews.animated.
     property QtObject previews: QtObject {
         /// Enable the enlarged image.
@@ -269,6 +267,13 @@ Singleton {
         /// Example: 1.2 and 1.2 make the center card 1.2x the thumbnail size.
         property real heightScale: 1.2
         property real widthScale: 1.2
+
+        /// Quality of the cached static preview image, 1..100.
+        ///
+        /// Higher values are sharper but increase cache size and scan time.
+        /// This does not affect the animated clips or the wallpaper displayed
+        /// on the desktop.
+        property int quality: 88
 
         /// Cache directory for previews.
         ///
@@ -299,9 +304,11 @@ Singleton {
             /// Example: 24 = 24 frames per second.
             property int fps: 24
 
-            /// WebP encoder quality, 1..100.
+            /// Quality of the generated animated preview clips, 1..100.
             ///
-            /// Higher is bigger and sharper.
+            /// Higher values keep more detail but make the cached WebP clips
+            /// larger and slower to decode. This does not affect the static
+            /// preview or the wallpaper displayed on the desktop.
             property int quality: 60
         }
     }

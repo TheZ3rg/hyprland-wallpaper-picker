@@ -8,7 +8,7 @@
 PREVIEW_VERSION=1
 
 preview_key() {
-    # <source> <width> <height>
-    printf '%s' "v${PREVIEW_VERSION}|$1|cover|$2x$3|preview" \
+    # <source> <width> <height> <quality>
+    printf '%s' "v${PREVIEW_VERSION}|$1|cover|$2x$3|q$4|preview" \
         | md5sum | cut -d' ' -f1
 }

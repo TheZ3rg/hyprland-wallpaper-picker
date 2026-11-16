@@ -18,7 +18,7 @@ not by the picker.
 - Only a window of tiles around the selection is instantiated, so large
   folders stay responsive.
 - Thumbnail cache keyed by source path and generation options; changing the
-  thumbnail size or corner radius regenerates it automatically.
+  thumbnail size or quality regenerates it automatically.
 - The center card shows a wider, higher-resolution crop generated and cached
   during the scan, so it is available as soon as a wallpaper is selected.
 - Thumbnails are generated with ImageMagick 7; files that cannot be converted
@@ -119,8 +119,8 @@ documented there. The main groups are:
 - wallpaper folder;
 - awww: image/GIF extensions, transitions, resize and filter;
 - mpvpaper: video extensions, layer, mpv options and pausing when hidden;
-- thumbnail boxes, cache and fade-in;
-- static preview crop and animated preview clips;
+- thumbnail size and quality, cache and fade-in;
+- static preview size and quality, and animated preview clips;
 - strip height, pixel spacing, looping, coverflow/center-card scaling, the
   `LIVE` badge and selection/scroll animation durations;
 - overlay layer, background dim, informational messages and close behaviour;
