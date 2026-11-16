@@ -68,13 +68,6 @@ Item {
     readonly property int previewWidth:
         Math.max(1, Math.round(previewHeight * centerAspect))
 
-    // Animated clips are smaller than static previews; their height follows
-    // the same preview aspect.
-    readonly property int livePreviewWidth:
-        Math.max(1, Config.previews.animated.width)
-    readonly property int livePreviewHeight:
-        Math.max(1, Math.round(livePreviewWidth / centerAspect))
-
     // Rows are buffered so `items` is assigned once per scan instead of
     // rebuilding the strip for every line.
     property var _buffer: []
@@ -133,8 +126,8 @@ Item {
             String(root.previewHeight),
             Config.mpvpaper.enabled ? Config.mpvpaper.extensions.join(",") : "",
             (Config.previews.animated.enabled && Config.previews.enabled) ? "1" : "0",
-            String(root.livePreviewWidth),
-            String(root.livePreviewHeight),
+            String(root.previewWidth),
+            String(root.previewHeight),
             String(Config.previews.animated.duration),
             String(Config.previews.animated.fps),
             String(Config.previews.animated.quality),

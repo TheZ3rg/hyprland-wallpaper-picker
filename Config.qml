@@ -280,9 +280,9 @@ Singleton {
 
         /// Short muted clips shown in the center card.
         ///
-        /// They are generated during the scan and cached. Changing the clip
-        /// settings regenerates them. When disabled, videos and GIFs still get
-        /// a static enlarged image in the center card.
+        /// They are generated during the scan and cached at the same size as
+        /// the static preview. When disabled, videos and GIFs still get a
+        /// static enlarged image in the center card.
         property QtObject animated: QtObject {
             /// Enable animated previews.
             property bool enabled: false
@@ -298,16 +298,6 @@ Singleton {
             ///
             /// Example: 24 = 24 frames per second.
             property int fps: 24
-
-            /// Clip width in pixels.
-            ///
-            /// The height follows the center card aspect. This is intentionally
-            /// smaller than the static preview because an animated clip
-            /// decodes many frames; a few hundred pixels is usually enough.
-            ///
-            /// Example: 600 = 600 pixels wide.
-            /// TODO: make this a fraction of the screen width and fix the docs.
-            property int width: 600
 
             /// WebP encoder quality, 1..100.
             ///

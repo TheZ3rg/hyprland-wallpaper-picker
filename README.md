@@ -150,9 +150,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   cached. Set `previews.animated.enabled` to `false` to skip clip generation and
   use a static preview crop instead.
 - Animated previews are muted 2.5-second WebP clips by default and are
-  decoded only while a card is centered and the strip is not moving. Long or
-  high-frame-rate clips use more memory, so keep `previews.animated.duration`,
-  `fps` and `width` moderate on low-memory machines.
+  decoded only while a card is centered and the strip is not moving. Their
+  dimensions follow the static preview, so larger preview scales also make the
+  clips larger. Keep `previews.animated.duration` and `fps` moderate on
+  low-memory machines.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folder
