@@ -40,7 +40,8 @@ Singleton {
         ///     "/mnt/media/Wallpapers"
         /// ]
         property var dirs: [
-            Quickshell.env("HOME") + "/Pictures/Wallpapers"
+            Quickshell.env("HOME") + "/Pictures/Wallpapers",
+            Quickshell.env("HOME") + "/Pictures/Wallpapers-live"
         ]
     }
 
@@ -72,14 +73,14 @@ Singleton {
             ///   "wave"  wavy wipe
             ///
             /// Invalid values raise an error and block applying.
-            property string type: "grow"
+            property string type: "wipe"
 
             /// Transition duration in milliseconds.
             ///
             /// Has no effect when type is "none".
             ///
-            /// Example: 800 = 800 milliseconds, 0 = instant.
-            property int duration: 800
+            /// Example: 800 = 0.8 seconds, 0 = instant.
+            property int duration: 1200
 
             /// Transition frame rate.
             ///
@@ -200,12 +201,14 @@ Singleton {
 
         /// Extend pauseWhenHidden, configure when pause occurs.
         ///
-        /// Ignored when pauseWhenHidden is false. Invalid values still raise an error.
+        /// Ignored when pauseWhenHidden is false.
         ///
         /// Possible values:
         ///   ""      only the compositor's hidden detection
         ///   "full"  also pause when any fullscreen window is open
         ///   "max"   also pause when a fullscreen or maximized window is open
+        ///
+        /// Invalid values raise an error and block applying.
         property string autoPauseMode: "max"
     }
 
@@ -223,8 +226,8 @@ Singleton {
         /// cached thumbnails.
         ///
         /// Example: heightRatio 0.35 and widthRatio 0.28.
-        property real heightRatio: 0.35
-        property real widthRatio: 0.20
+        property real heightRatio: 0.32
+        property real widthRatio: 0.18
 
         /// Quality of the cached thumbnails, 1..100.
         ///
@@ -242,7 +245,7 @@ Singleton {
         /// Fade-in time for each thumbnail after it loads, in milliseconds.
         ///
         /// Example: 800 = 800 milliseconds, 0 = no fade.
-        property int fadeInDuration: 800
+        property int fadeInDuration: 600
 
         /// Time into the video used for its still thumbnail and as the start
         /// of its animated preview, in seconds.
@@ -342,20 +345,20 @@ Singleton {
         /// milliseconds.
         ///
         /// Example: 600 = 0.6 seconds; 0 makes the opening scroll instant.
-        property int openAnimationDuration: 600
+        property int openAnimationDuration: 0
 
-        /// Coverflow scaling and center-card sizing.
+        /// Scale tiles down toward the strip edges (coverflow).
         ///
-        /// Disable to keep every tile at the same scale. The other coverflow
-        /// settings are ignored when disabled.
+        /// Disable to keep every tile at the same scale.
         property QtObject coverflow: QtObject {
-            /// Scale tiles down toward the strip edges.
-            property bool enabled: false
+            /// The other coverflow settings are ignored when disabled.
+            property bool enabled: true
 
             /// Scale of the center tile and of tiles falloffRange slots away.
             ///
-            /// 1.35 = 35% larger than the base tile; 0.6 = 60%.
-            property real centerScale: 1.35
+            /// Example: 1.35 = 135% of the base size;
+            ///          0.6 = 60% of the base size.
+            property real centerScale: 1.0
             property real edgeScale: 0.6
 
             /// Number of tiles over which the scale falls from centerScale to
@@ -405,8 +408,8 @@ Singleton {
     property QtObject search: QtObject {
         /// Show the search field and enable Ctrl+F.
         ///
-        /// When false, the field is hidden and the strip always shows the
-        /// full wallpaper list. The other search settings are ignored.
+        /// When false, the field is hidden and
+        /// the other search settings are ignored.
         property bool enabled: true
 
         /// How the strip responds to a query.
@@ -445,8 +448,7 @@ Singleton {
 
         /// Animation time for search jumps, in milliseconds.
         ///
-        /// 0 is instant. Short jumps still use strip.selectionDuration.
-        /// TODO: strange use of strip.selectionDuration for short jumps; needs fixing.
+        /// Example: 800 = 0.8 seconds, 0 = instant.
         property int animationDuration: 800
     }
 }
