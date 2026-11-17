@@ -101,10 +101,6 @@ Item {
             Config.strip.coverflow.edgeScale);
         positive(out, "strip.coverflow.falloffRange",
             Config.strip.coverflow.falloffRange);
-        positive(out, "strip.coverflow.centerWidthScale",
-            Config.strip.coverflow.centerWidthScale);
-        positive(out, "strip.coverflow.centerHeightScale",
-            Config.strip.coverflow.centerHeightScale);
 
         // Overlay
         oneOf(out, "overlay.layer", Config.overlay.layer,

@@ -361,16 +361,6 @@ Singleton {
             ///
             /// Example: 9 = the 9th tile away from the centre is at edgeScale.
             property real falloffRange: 9.0
-
-            /// Extra size multipliers for the center card.
-            ///
-            /// centerWidthScale widens the card and centerHeightScale lengthens
-            /// it. They are ignored unless enabled is true.
-            ///
-            /// Example: 1.35 = 35% wider/higher than the base tile; 1.0 = same width/height.
-            /// TODO: remove or change these; they are most likely redundant.
-            property real centerWidthScale: 1.0
-            property real centerHeightScale: 1.0
         }
 
         /// Show the "LIVE" badge on video and GIF tiles.

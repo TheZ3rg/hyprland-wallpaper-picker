@@ -466,19 +466,11 @@ Item {
             const targetHeight = hasPreview
                 ? baseHeight * Config.previews.heightScale
                 : baseHeight;
-            const widthFactor = Config.strip.coverflow.enabled
-                ? 1 + (Config.strip.coverflow.centerWidthScale - 1)
-                    * centerWeight
-                : 1;
-            const heightFactor = Config.strip.coverflow.enabled
-                ? 1 + (Config.strip.coverflow.centerHeightScale - 1)
-                    * centerWeight
-                : 1;
 
             const w = (baseWidth + (targetWidth - baseWidth) * centerWeight)
-                * s * widthFactor;
+                * s;
             const h = (baseHeight + (targetHeight - baseHeight) * centerWeight)
-                * s * heightFactor;
+                * s;
             out.push({ x: x, w: w, h: h, s: s });
             x += w + gap;
         }

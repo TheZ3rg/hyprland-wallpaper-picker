@@ -58,15 +58,10 @@ Item {
             (Config.thumbnails.widthRatio * Config.previews.widthScale)
             / Math.max(0.001,
                 Config.thumbnails.heightRatio * Config.previews.heightScale))
-    readonly property real centerAspect:
-        Math.max(0.05, previewAspect
-            * (Config.strip.coverflow.enabled
-                ? Config.strip.coverflow.centerWidthScale
-                : 1))
     readonly property int previewHeight:
         Math.max(1, Math.round(thumbHeight * Config.previews.heightScale))
     readonly property int previewWidth:
-        Math.max(1, Math.round(previewHeight * centerAspect))
+        Math.max(1, Math.round(previewHeight * previewAspect))
 
     // Rows are buffered so `items` is assigned once per scan instead of
     // rebuilding the strip for every line.
