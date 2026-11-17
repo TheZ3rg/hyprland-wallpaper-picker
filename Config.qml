@@ -320,14 +320,10 @@ Singleton {
 
     /// Layout and animation of the horizontal wallpaper row.
     property QtObject strip: QtObject {
-        /// What happens at the ends of the list.
+        /// Wrap the row forever, repeating wallpapers if needed.
         ///
-        /// Possible values:
-        ///   "endless"  wrap forever, repeating wallpapers if needed
-        ///   "off"      stop at the ends
-        ///
-        /// Invalid values raise an error and block applying.
-        property string loopMode: "endless"
+        /// When false, the strip stops at the ends.
+        property bool loop: true
 
         /// Gap between tiles as a fraction of the monitor height.
         ///
@@ -340,13 +336,13 @@ Singleton {
         /// a key.
         ///
         /// Example: 500 = 0.5 seconds; 0 makes these moves instant.
-        property int selectionDuration: 600
+        property int moveAnimationDuration: 600
 
         /// Duration of the opening scroll when the picker starts, in
         /// milliseconds.
         ///
         /// Example: 600 = 0.6 seconds; 0 makes the opening scroll instant.
-        property int scrollDuration: 600
+        property int openAnimationDuration: 600
 
         /// Coverflow scaling and center-card sizing.
         ///

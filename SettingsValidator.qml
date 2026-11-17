@@ -97,12 +97,11 @@ Item {
             Config.previews.animated.quality, 1, 100);
 
         // Strip
-        oneOf(out, "strip.loopMode", Config.strip.loopMode,
-            ["endless", "off"]);
         nonNegative(out, "strip.spacingRatio", Config.strip.spacingRatio);
-        nonNegative(out, "strip.selectionDuration",
-            Config.strip.selectionDuration);
-        nonNegative(out, "strip.scrollDuration", Config.strip.scrollDuration);
+        nonNegative(out, "strip.moveAnimationDuration",
+            Config.strip.moveAnimationDuration);
+        nonNegative(out, "strip.openAnimationDuration",
+            Config.strip.openAnimationDuration);
         positive(out, "strip.coverflow.centerScale",
             Config.strip.coverflow.centerScale);
         positive(out, "strip.coverflow.edgeScale",

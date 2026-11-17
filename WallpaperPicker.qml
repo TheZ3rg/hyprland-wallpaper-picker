@@ -164,7 +164,7 @@ PanelWindow {
         if (backend.currentPath !== "") {
             const i = strip.indexOfPath(backend.currentPath);
             if (i >= 0)
-                strip.scrollTo(i, Config.strip.scrollDuration);
+                strip.scrollTo(i, Config.strip.openAnimationDuration);
         }
         root._initialSelectionDone = true;
     }
@@ -174,9 +174,9 @@ PanelWindow {
      *
      * `targetPath` wins when it is still present. Otherwise the previous
      * selection is kept, unless `preferBest` asks for the best search match.
-     * A positive `scrollDuration` animates the move; 0 jumps instantly.
+     * A positive `duration` animates the move; 0 jumps instantly.
      */
-    function refreshStrip(targetPath, preferBest, scrollDuration) {
+    function refreshStrip(targetPath, preferBest, duration) {
         const previous = strip.currentItemPath;
         // In scroll mode the list itself does not change; avoid resetting the
         // window (and interrupting a running scroll) on every keystroke.
@@ -198,8 +198,8 @@ PanelWindow {
         if (index < 0)
             index = 0;
 
-        if (scrollDuration > 0)
-            strip.scrollTo(index, scrollDuration);
+        if (duration > 0)
+            strip.scrollTo(index, duration);
         else
             strip.jumpTo(index);
     }

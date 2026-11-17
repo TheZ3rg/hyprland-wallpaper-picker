@@ -40,11 +40,7 @@ Item {
     signal navigated()
 
     readonly property int count: items.length
-    readonly property string loopMode: {
-        const m = Config.strip.loopMode;
-        return m === "endless" ? "endless" : "off";
-    }
-    readonly property bool endless: root.loopMode === "endless"
+    readonly property bool endless: Config.strip.loop
     readonly property real baseHeight: height * Config.thumbnails.heightRatio
     readonly property real baseWidth: height * Config.thumbnails.widthRatio
     readonly property real gap:
@@ -61,7 +57,8 @@ Item {
     // Scroll position in index units; fractional while animating.
     property real position: 0
     property bool animatePosition: true
-    property int positionDuration: Math.max(0, Config.strip.selectionDuration)
+    property int positionDuration:
+        Math.max(0, Config.strip.moveAnimationDuration)
     // Duration requested for the next target change, or -1 for the
     // distance-based default.
     property int _nextDuration: -1
@@ -183,7 +180,7 @@ Item {
         }
 
         const moveDuration = duration === undefined
-            ? Math.max(0, Config.strip.selectionDuration)
+            ? Math.max(0, Config.strip.moveAnimationDuration)
             : duration;
         if (moveDuration <= 0) {
             jumpTo(model);
@@ -368,7 +365,7 @@ Item {
 
         const duration = root._nextDuration >= 0
             ? root._nextDuration
-            : Math.max(0, Config.strip.selectionDuration);
+            : Math.max(0, Config.strip.moveAnimationDuration);
         root._nextDuration = -1;
 
         if (duration <= 0) {
@@ -404,8 +401,8 @@ Item {
     onSlotCountChanged: refreshSlots()
     onWindowStartChanged: refreshSlots()
 
-    // Changing loop mode changes how indices map, so re-anchor and recentre.
-    onLoopModeChanged: {
+    // Changing looping changes how indices map, so re-anchor and recentre.
+    onEndlessChanged: {
         if (count === 0)
             return;
 

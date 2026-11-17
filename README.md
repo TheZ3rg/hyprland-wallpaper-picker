@@ -12,8 +12,8 @@ Hyprland, not by the picker.
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
 - Scans one or more wallpaper folders (`source.dirs`).
-- Optional looping (`strip.loopMode`): `endless` keeps the row continuous and
-  repeats wallpapers when needed; `off` stops at the ends.
+- Optional looping (`strip.loop`): enabled keeps the row continuous and repeats
+  wallpapers when needed; disabled stops at the ends.
 - Search by wallpaper name: jump to the best match while typing, or hide
   non-matching wallpapers (see `search.mode` in `Config.qml`). Set
   `search.enabled` to `false` to hide the field.
@@ -107,9 +107,8 @@ merely contain it.
 
 Set `search.enabled` to `false` to hide the field and disable `Ctrl+F`.
 
-`strip.loopMode` selects how the ends behave: `endless` wraps seamlessly,
-repeating wallpapers if the folder is smaller than the window; `off` stops at
-the ends.
+`strip.loop` selects how the ends behave: `true` wraps seamlessly, repeating
+wallpapers if the folder is smaller than the window; `false` stops at the ends.
 
 The picker closes after a successful apply by default; see `overlay.closeOnApply`
 in `Config.qml`. If applying fails, it stays open and shows the error. A live
@@ -126,7 +125,7 @@ documented there. The main groups are:
 - thumbnail size and quality, cache and fade-in;
 - static preview size and quality, and animated preview clips;
 - strip height, spacing ratio, looping, coverflow/center-card scaling, the
-  `LIVE` badge and selection/scroll animation durations;
+  `LIVE` badge and move/open animation durations;
 - overlay layer, background dim, informational messages and close behaviour;
 - search enabled, mode, field position, margin ratio, opacity and animation
   duration.
