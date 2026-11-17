@@ -639,7 +639,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                border.width: 1
+                border.width: ScreenMetrics.hairline()
                 border.color: Qt.rgba(1, 1, 1, 0.10)
             }
 
@@ -648,15 +648,16 @@ Item {
                 id: liveBadge
 
                 visible: Config.strip.showLiveBadge && cell.entry
-                    && cell.entry.live === true && cell.width >= 56
+                    && cell.entry.live === true
+                    && cell.width >= ScreenMetrics.px(56)
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
-                anchors.margins: 6
-                width: liveBadgeLabel.implicitWidth + 10
-                height: liveBadgeLabel.implicitHeight + 4
-                radius: 4
+                anchors.margins: ScreenMetrics.px(6)
+                width: liveBadgeLabel.implicitWidth + ScreenMetrics.px(10)
+                height: liveBadgeLabel.implicitHeight + ScreenMetrics.px(4)
+                radius: ScreenMetrics.px(4)
                 color: Qt.rgba(0, 0, 0, 0.65)
-                border.width: 1
+                border.width: ScreenMetrics.hairline()
                 border.color: Qt.rgba(1, 1, 1, 0.15)
 
                 Text {
@@ -664,7 +665,7 @@ Item {
                     anchors.centerIn: parent
                     text: "LIVE"
                     color: "white"
-                    font.pixelSize: 10
+                    font.pixelSize: ScreenMetrics.px(10)
                     font.bold: true
                 }
             }

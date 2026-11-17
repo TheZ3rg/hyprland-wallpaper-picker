@@ -46,11 +46,12 @@ Rectangle {
     readonly property int edgeMargin:
         Math.max(0, Math.round(parent.height * Config.search.marginRatio))
 
-    width: Math.max(140, Math.min(420, parent.width - 2 * root.edgeMargin))
-    height: 44
-    radius: 10
+    width: Math.max(ScreenMetrics.px(140),
+        Math.min(ScreenMetrics.px(420), parent.width - 2 * root.edgeMargin))
+    height: ScreenMetrics.px(44)
+    radius: ScreenMetrics.px(10)
     color: Qt.rgba(0, 0, 0, root.editing ? 0.84 : 0.62)
-    border.width: 1
+    border.width: ScreenMetrics.hairline()
     border.color: root.editing ? Qt.rgba(1, 1, 1, 0.38) : Qt.rgba(1, 1, 1, 0.12)
     opacity: root.editing ? 1 : Config.search.unfocusedOpacity
 
@@ -84,26 +85,26 @@ Rectangle {
 
     Text {
         anchors.left: parent.left
-        anchors.leftMargin: 14
+        anchors.leftMargin: ScreenMetrics.px(14)
         anchors.verticalCenter: parent.verticalCenter
         visible: input.text === ""
         text: "Search wallpapers"
         color: "white"
         opacity: 0.45
-        font.pixelSize: 16
+        font.pixelSize: ScreenMetrics.px(16)
     }
 
     TextInput {
         id: input
 
         anchors.fill: parent
-        anchors.leftMargin: 14
-        anchors.rightMargin: 14
+        anchors.leftMargin: ScreenMetrics.px(14)
+        anchors.rightMargin: ScreenMetrics.px(14)
         verticalAlignment: TextInput.AlignVCenter
         color: "white"
         selectionColor: Qt.rgba(1, 1, 1, 0.25)
         selectedTextColor: "white"
-        font.pixelSize: 16
+        font.pixelSize: ScreenMetrics.px(16)
         clip: true
         activeFocusOnPress: true
 
@@ -137,12 +138,13 @@ Rectangle {
     // the placeholder.
     Text {
         anchors.right: parent.right
-        anchors.rightMargin: 12
+        anchors.rightMargin: ScreenMetrics.px(12)
         anchors.verticalCenter: parent.verticalCenter
-        visible: !root.editing && input.text === "" && root.width >= 280
+        visible: !root.editing && input.text === ""
+            && root.width >= ScreenMetrics.px(280)
         text: "Ctrl+F"
         color: "white"
         opacity: 0.30
-        font.pixelSize: 12
+        font.pixelSize: ScreenMetrics.px(12)
     }
 }
