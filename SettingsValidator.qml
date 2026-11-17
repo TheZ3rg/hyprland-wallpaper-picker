@@ -46,11 +46,19 @@ Item {
         const out = [];
 
         // Source
-        if (typeof Config.source.dir !== "string" || Config.source.dir === "")
-            out.push("source.dir: must be a non-empty absolute path");
-        else if (!Config.source.dir.startsWith("/"))
-            out.push("source.dir: must be an absolute path: \""
-                + Config.source.dir + "\"");
+        const dirs = Config.source.dirs;
+        if (!Array.isArray(dirs) || dirs.length === 0) {
+            out.push("source.dirs: must be a non-empty list of absolute paths");
+        } else {
+            for (let i = 0; i < dirs.length; ++i) {
+                const dir = dirs[i];
+                const path = "source.dirs[" + i + "]";
+                if (typeof dir !== "string" || dir === "")
+                    out.push(path + ": must be a non-empty absolute path");
+                else if (!dir.startsWith("/"))
+                    out.push(path + ": must be an absolute path: \"" + dir + "\"");
+            }
+        }
 
         // awww
         oneOf(out, "awww.transition.type", Config.awww.transition.type,

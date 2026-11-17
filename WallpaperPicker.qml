@@ -323,7 +323,7 @@ PanelWindow {
             return search.matchCount + (search.matchCount === 1 ? " match" : " matches");
         }
         if (model.ready && model.items.length === 0)
-            return "No wallpapers found in " + Config.source.dir;
+            return "No wallpapers found in " + Config.source.dirs.join(", ");
         return "";
     }
 

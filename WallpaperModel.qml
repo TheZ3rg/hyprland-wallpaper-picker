@@ -3,7 +3,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Scans Config.source.dir and exposes the wallpapers as `items`.
+ * Scans Config.source.dirs and exposes the wallpapers as `items`.
  *
  * File discovery and thumbnail generation happen in scripts/sync-thumbs.sh,
  * which prints a tab-separated manifest parsed here.
@@ -39,6 +39,12 @@ Item {
     signal loaded()
 
     readonly property string script: Quickshell.shellPath("scripts/sync-thumbs.sh")
+
+    // Newline-separated source list for scripts/sync-thumbs.sh.
+    readonly property string _sourceDirs:
+        Array.isArray(Config.source.dirs)
+            ? Config.source.dirs.join("\n")
+            : ""
 
     // Thumbnail size derived from the configured ratios. The height is frozen
     // at the first known screen size, so focus changes do not regenerate the
@@ -110,7 +116,7 @@ Item {
         // Positional arguments must match scripts/sync-thumbs.sh.
         command: [
             "bash", root.script,
-            Config.source.dir,
+            root._sourceDirs,
             Config.thumbnails.cacheDir,
             String(root.thumbWidth),
             String(root.thumbHeight),
@@ -202,7 +208,7 @@ Item {
 
     Connections {
         target: Config.source
-        function onDirChanged() { root.rescan() }
+        function onDirsChanged() { root.rescan() }
     }
 
     onScreenHeightChanged: root.beginScan()

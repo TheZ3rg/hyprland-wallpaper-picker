@@ -27,15 +27,21 @@ Singleton {
 
     // ── SOURCE ────────────────────────────────────────────────
 
-    /// The wallpaper source.
+    /// The wallpaper sources.
     property QtObject source: QtObject {
-        /// Folder scanned for wallpapers.
+        /// Folders scanned for wallpapers.
         ///
-        /// Scanning is not recursive.
-        /// Use an absolute path; "~" is not expanded.
+        /// Scanning is not recursive. Use absolute paths; "~" is not expanded.
+        /// Duplicate entries are ignored.
         ///
-        /// Example: "/home/user/Pictures/Wallpapers"
-        property string dir: Quickshell.env("HOME") + "/Pictures/Wallpapers"
+        /// Example:
+        /// [
+        ///     "/home/user/Pictures/Wallpapers",
+        ///     "/mnt/media/Wallpapers"
+        /// ]
+        property var dirs: [
+            Quickshell.env("HOME") + "/Pictures/Wallpapers"
+        ]
     }
 
     // ── AWWW ──────────────────────────────────────────────────

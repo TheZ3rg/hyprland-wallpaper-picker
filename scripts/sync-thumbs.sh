@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 #
-# Usage: sync-thumbs.sh <wallpaperDir> <cacheDir> <w> <h> <thumbQuality> \
+# Usage: sync-thumbs.sh <wallpaperDirs> <cacheDir> <w> <h> <thumbQuality> \
 #   <imageExts> [previewDir] [previewWidth] [previewHeight] [previewQuality] \
 #   [videoExts] [animatedPreviews] [animWidth] [animHeight] \
 #   [animDurationMs] [animFps] [animQuality] [posterSeek]
 #
-# Scans wallpaperDir (non-recursive), generates or reuses cached thumbnails
-# and focused previews, and prints one tab-separated manifest row per
-# wallpaper:
+# <wallpaperDirs> is a newline-separated list of directories. Each directory
+# is scanned non-recursively. Missing directories are reported, and the
+# remaining directories are still scanned.
+#
+# Generates or reuses cached thumbnails and focused previews, and prints one
+# tab-separated manifest row per wallpaper:
 #
 #     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>\t<previewPath>\t<kind>\t<animated>
 #
@@ -27,7 +30,7 @@ source "$SCRIPT_DIR/video-lib.sh"
 # not reused. Video thumbnails add the poster seek to their key instead.
 CACHE_VERSION=1
 
-DIR="${1:-}"
+DIRS="${1:-}"
 CACHE="${2:-}"
 W="${3:-420}"
 H="${4:-640}"
@@ -76,7 +79,7 @@ if ! [[ "$POSTER_SEEK" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
     exit 2
 fi
 
-if [ -z "$DIR" ] || [ -z "$CACHE" ]; then
+if [ -z "$DIRS" ] || [ -z "$CACHE" ]; then
     echo "sync-thumbs.sh: missing arguments" >&2
     exit 2
 fi
@@ -96,9 +99,33 @@ if ! [[ "$PREVIEW_QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
     exit 2
 fi
 
-# A missing folder is a configuration error; an existing empty folder is not.
-if [ ! -d "$DIR" ]; then
-    echo "sync-thumbs.sh: wallpaper dir not found: $DIR" >&2
+ROOTS=()
+declare -A seen_roots=()
+while IFS= read -r dir; do
+    [ -z "$dir" ] && continue
+    [ -n "${seen_roots["$dir"]:-}" ] && continue
+    seen_roots["$dir"]=1
+    ROOTS+=("$dir")
+done <<< "$DIRS"
+
+if [ "${#ROOTS[@]}" -eq 0 ]; then
+    echo "sync-thumbs.sh: no wallpaper directories configured" >&2
+    exit 2
+fi
+
+MISSING_DIRS=0
+VALID_ROOTS=()
+for dir in "${ROOTS[@]}"; do
+    if [ ! -d "$dir" ]; then
+        echo "sync-thumbs.sh: wallpaper dir not found: $dir" >&2
+        MISSING_DIRS=$((MISSING_DIRS + 1))
+        continue
+    fi
+    VALID_ROOTS+=("$dir")
+done
+
+if [ "${#VALID_ROOTS[@]}" -eq 0 ]; then
+    echo "sync-thumbs.sh: no readable wallpaper directories" >&2
     exit 1
 fi
 
@@ -159,10 +186,18 @@ declare -A used_names=()
 
 # sort -z keeps the manifest order stable, so the strip does not reshuffle
 # when files are added or removed.
-if ! find "$DIR" -maxdepth 1 -type f \( "${find_args[@]}" \) -print0 > "$list"; then
-    echo "sync-thumbs.sh: failed to scan $DIR" >&2
-    exit 1
-fi
+SKIP_PRUNE=0
+[ "$MISSING_DIRS" -gt 0 ] && SKIP_PRUNE=1
+SCAN_FAILED=0
+: > "$list"
+for dir in "${VALID_ROOTS[@]}"; do
+    if ! find "$dir" -maxdepth 1 -type f \( "${find_args[@]}" \) \
+            -print0 >> "$list"; then
+        echo "sync-thumbs.sh: failed to scan $dir" >&2
+        SCAN_FAILED=1
+        SKIP_PRUNE=1
+    fi
+done
 if ! sort -z "$list" > "$sorted"; then
     echo "sync-thumbs.sh: failed to sort the file list" >&2
     exit 1
@@ -296,14 +331,27 @@ while IFS= read -r -d '' f; do
 done < "$sorted"
 
 
-# Prune cache entries this scan did not produce. A failed scan returns before
-# this point, so a temporarily unavailable folder cannot wipe the cache.
-while IFS= read -r -d '' cached; do
-    name="${cached##*/}"
-    if [ -z "${used_names["$name"]:-}" ]; then
-        rm -f -- "$cached"
-    fi
-done < <(find "$CACHE" -maxdepth 1 -type f -print0 2>/dev/null)
+# Prune cache entries this scan did not produce. Skip pruning when a directory
+# is missing or a scan failed, so a temporarily unavailable source cannot wipe
+# its cached thumbnails.
+if [ "$SKIP_PRUNE" -eq 0 ]; then
+    while IFS= read -r -d '' cached; do
+        name="${cached##*/}"
+        if [ -z "${used_names["$name"]:-}" ]; then
+            rm -f -- "$cached"
+        fi
+    done < <(find "$CACHE" -maxdepth 1 -type f -print0 2>/dev/null)
+fi
+
+if [ "$MISSING_DIRS" -gt 0 ]; then
+    printf 'sync-thumbs.sh: %d wallpaper dir(s) not found\n' "$MISSING_DIRS" >&2
+    exit 1
+fi
+
+if [ "$SCAN_FAILED" -eq 1 ]; then
+    echo "sync-thumbs.sh: one or more wallpaper dirs could not be scanned" >&2
+    exit 1
+fi
 
 if [ "$failed" -gt 0 ]; then
     printf 'sync-thumbs.sh: %d file(s) could not be processed\n' "$failed" >&2

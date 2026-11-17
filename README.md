@@ -4,13 +4,14 @@ A coverflow-style wallpaper picker for Hyprland, built with
 [Quickshell](https://quickshell.org), [awww](https://codeberg.org/LGFae/awww)
 and [mpvpaper](https://github.com/GhostNaN/mpvpaper).
 
-It scans a folder, caches thumbnails, and opens as a full-screen layer-shell
-overlay on the focused monitor. The desktop behind it is blurred by Hyprland,
-not by the picker.
+It scans one or more folders, caches thumbnails, and opens as a full-screen
+layer-shell overlay on the focused monitor. The desktop behind it is blurred by
+Hyprland, not by the picker.
 
 ## Features
 
 - Animated coverflow strip with keyboard, mouse and trackpad navigation.
+- Scans one or more wallpaper folders (`source.dirs`).
 - Optional looping (`strip.loopMode`): `endless` keeps the row continuous and
   repeats wallpapers when needed; `off` stops at the ends.
 - Search by wallpaper name: jump to the best match while typing, or hide
@@ -119,7 +120,7 @@ wallpaper keeps playing after the picker closes.
 All settings live in [`Config.qml`](Config.qml), and each property is
 documented there. The main groups are:
 
-- wallpaper folder;
+- wallpaper folders;
 - awww: image/GIF extensions, transitions, resize and filter;
 - mpvpaper: video extensions, layer, mpv options and pausing when hidden;
 - thumbnail size and quality, cache and fade-in;
@@ -160,7 +161,7 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   low-memory machines.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
-- Scanning is non-recursive: only files directly inside the configured folder
+- Scanning is non-recursive: only files directly inside the configured folders
   are listed.
 - `Config.overlay.layer` defaults to `overlay`, so the picker covers status
   bars. Set it to `top` to keep bars that also use the overlay layer visible
