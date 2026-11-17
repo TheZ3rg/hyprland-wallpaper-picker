@@ -3,12 +3,15 @@ import QtQuick
 /**
  * Search input shown over the wallpaper strip.
  *
- * The field is always visible and dims while it is not being edited; click it
- * or press Ctrl+F to start typing. The picker decides what a commit or a
- * cancellation does, so this component only reports those events.
+ * The field dims while it is not being edited; click it or press Ctrl+F to
+ * start typing. It is hidden when search is disabled in Config. The picker
+ * decides what a commit or a cancellation does, so this component only
+ * reports those events.
  */
 Rectangle {
     id: root
+
+    visible: Config.search.enabled
 
     // Current text. Assigning it replaces the query.
     property alias text: input.text

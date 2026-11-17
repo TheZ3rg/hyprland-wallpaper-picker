@@ -113,7 +113,7 @@ PanelWindow {
     WallpaperSearch {
         id: search
         items: model.items
-        query: searchField.text
+        query: Config.search.enabled ? searchField.text : ""
         mode: Config.search.mode
     }
 
@@ -336,9 +336,10 @@ PanelWindow {
         visible: root.statusText !== ""
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
-        // Reserve the bottom band while the search field is anchored there,
-        // so the two never overlap.
-        anchors.bottomMargin: Config.search.verticalAlignment === "bottom"
+        // Reserve the bottom band while the search field is visible and
+        // anchored there, so the two never overlap.
+        anchors.bottomMargin: (Config.search.enabled
+            && Config.search.verticalAlignment === "bottom")
             ? Math.max(32, searchField.edgeMargin + searchField.height + 12)
             : 32
         width: Math.min(parent.width - 64, Math.max(180, statusMetrics.width + 32))
@@ -388,6 +389,7 @@ PanelWindow {
     Shortcut {
         sequence: "Ctrl+F"
         context: Qt.ApplicationShortcut
+        enabled: Config.search.enabled
         onActivated: searchField.activate()
     }
 

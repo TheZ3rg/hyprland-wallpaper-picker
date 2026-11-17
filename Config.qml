@@ -401,6 +401,12 @@ Singleton {
 
     /// Search field and how the query affects the strip.
     property QtObject search: QtObject {
+        /// Show the search field and enable Ctrl+F.
+        ///
+        /// When false, the field is hidden and the strip always shows the
+        /// full wallpaper list. The other search settings are ignored.
+        property bool enabled: true
+
         /// How the strip responds to a query.
         ///
         /// Possible values:
