@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import Quickshell.Hyprland
 
 /**
  * Root layer-shell window of the picker.
@@ -17,9 +16,7 @@ PanelWindow {
     // map the window on the fallback screen for a frame at startup.
     visible: root._shown
 
-    readonly property var targetScreen: Hyprland.focusedMonitor
-        ? Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor.name)
-        : null
+    readonly property var targetScreen: ScreenMetrics.screen
 
     // The first output is only a hidden backing screen until the focused
     // monitor resolves; it follows focus after that.
@@ -340,30 +337,34 @@ PanelWindow {
         // anchored there, so the two never overlap.
         anchors.bottomMargin: (Config.search.enabled
             && Config.search.verticalAlignment === "bottom")
-            ? Math.max(32, searchField.edgeMargin + searchField.height + 12)
-            : 32
-        width: Math.min(parent.width - 64, Math.max(180, statusMetrics.width + 32))
-        height: statusText.contentHeight + 24
-        radius: 8
+            ? Math.max(ScreenMetrics.px(32),
+                searchField.edgeMargin + searchField.height
+                    + ScreenMetrics.px(12))
+            : ScreenMetrics.px(32)
+        width: Math.min(parent.width - ScreenMetrics.px(64),
+            Math.max(ScreenMetrics.px(180),
+                statusMetrics.width + ScreenMetrics.px(32)))
+        height: statusText.contentHeight + ScreenMetrics.px(24)
+        radius: ScreenMetrics.px(8)
         color: root.statusIsError
             ? Qt.rgba(0.30, 0.04, 0.04, 0.94)
             : Qt.rgba(0, 0, 0, 0.78)
-        border.width: 1
+        border.width: ScreenMetrics.hairline()
         border.color: Qt.rgba(1, 1, 1, 0.12)
 
         TextMetrics {
             id: statusMetrics
             text: root.statusText
-            font.pixelSize: 16
+            font.pixelSize: ScreenMetrics.px(16)
         }
 
         Text {
             id: statusText
             anchors.centerIn: parent
-            width: statusBox.width - 32
+            width: statusBox.width - ScreenMetrics.px(32)
             text: root.statusText
             color: "white"
-            font.pixelSize: 16
+            font.pixelSize: ScreenMetrics.px(16)
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
         }
