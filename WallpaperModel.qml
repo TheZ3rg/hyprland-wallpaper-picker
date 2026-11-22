@@ -17,12 +17,22 @@ Item {
     height: 0
 
     // One object per wallpaper:
-    // { path, thumb, aspect, preview, live, video, animated }.
+    // { path, source, thumb, aspect, preview, live, video, gif }.
     property var items: []
 
-    // Logical height of the monitor the picker opened on. Thumbnail sizes are
-    // derived from the configured ratios and this height.
-    property int screenHeight: 0
+    // Logical height of the largest connected screen. Cache sizes follow it,
+    // so moving the picker between monitors does not regenerate anything. The
+    // picker scales the images down on smaller screens.
+    readonly property int generationHeight: {
+        let h = 0;
+        for (let i = 0; i < Quickshell.screens.length; ++i)
+            h = Math.max(h, Quickshell.screens[i].height);
+        return h;
+    }
+
+    // Height the current scan was generated for. It prevents a rescan while
+    // the same screens are connected.
+    property int _scannedHeight: 0
 
     property bool scanning: false
 
@@ -46,15 +56,13 @@ Item {
             ? Config.source.dirs.join("\n")
             : ""
 
-    // Thumbnail size derived from the configured ratios. The height is frozen
-    // at the first known screen size, so focus changes do not regenerate the
-    // cache while the picker is open.
-    property int _generationHeight: 0
+    // Thumbnail size derived from the configured ratios and the largest
+    // connected screen.
     readonly property int thumbHeight:
-        Math.max(1, Math.round(root._generationHeight
+        Math.max(1, Math.round(root.generationHeight
             * Config.thumbnails.heightRatio))
     readonly property int thumbWidth:
-        Math.max(1, Math.round(root._generationHeight
+        Math.max(1, Math.round(root.generationHeight
             * Config.thumbnails.widthRatio))
 
     // Preview size is a multiple of the thumbnail size. Center width scaling
@@ -83,14 +91,15 @@ Item {
     }
 
     function beginScan() {
-        if (root._generationHeight > 0 || root.screenHeight <= 0)
+        if (root.generationHeight <= 0
+                || root._scannedHeight === root.generationHeight)
             return;
-        root._generationHeight = root.screenHeight;
+        root._scannedHeight = root.generationHeight;
         root.rescan();
     }
 
     function rescan() {
-        if (root._generationHeight <= 0)
+        if (root.generationHeight <= 0)
             return;
 
         // Drop stale entries immediately: those files may no longer exist.
@@ -127,18 +136,13 @@ Item {
             String(root.previewHeight),
             String(Config.previews.quality),
             Config.mpvpaper.enabled ? Config.mpvpaper.extensions.join(",") : "",
-            (Config.previews.animated.enabled && Config.previews.enabled) ? "1" : "0",
-            String(root.previewWidth),
-            String(root.previewHeight),
-            String(Config.previews.animated.duration),
-            String(Config.previews.animated.fps),
-            String(Config.previews.animated.quality),
-            String(Config.thumbnails.videoPosterSeek)
+            String(Config.thumbnails.videoPosterSeek),
+            String(Config.thumbnails.workers)
         ]
 
         // Manifest row:
         // <sourcePath> \t <thumbPath> \t <width> \t <height> \t <previewPath>
-        // \t <kind> \t <animated>
+        // \t <kind>
         stdout: SplitParser {
             onRead: line => {
                 const parts = line.split("\t");
@@ -154,10 +158,11 @@ Item {
 
                 const preview = parts.length > 4 ? parts[4] : "";
                 const kind = parts.length > 5 ? parts[5] : "image";
-                const animated = parts.length > 6 && parts[6] === "1";
 
                 root._buffer.push({
                     path: parts[0],
+                    // Original file, used for live video and GIF playback.
+                    source: root.toFileUrl(parts[0]),
                     thumb: root.toFileUrl(parts[1]),
                     aspect: w / h,
                     preview: preview !== "" ? root.toFileUrl(preview) : "",
@@ -165,8 +170,8 @@ Item {
                     live: kind === "video" || kind === "gif",
                     // Played by mpvpaper instead of awww.
                     video: kind === "video",
-                    // The preview is an animated clip.
-                    animated: animated
+                    // Played live in the center card.
+                    gif: kind === "gif"
                 });
             }
         }
@@ -211,7 +216,7 @@ Item {
         function onDirsChanged() { root.rescan() }
     }
 
-    onScreenHeightChanged: root.beginScan()
+    onGenerationHeightChanged: root.beginScan()
 
     Component.onCompleted: root.beginScan()
 }

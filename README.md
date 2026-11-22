@@ -29,8 +29,8 @@ Hyprland, not by the picker.
 - GIFs are supported, and animated GIFs are also shown live on the desktop.
 - Video wallpapers are played by [mpvpaper](https://github.com/GhostNaN/mpvpaper)
   and appear in the same strip as images.
-- Short muted previews of videos and animated GIFs play in the center card.
-  The clips are cached, so revisiting a wallpaper is instant.
+- Videos and animated GIFs play muted in the center card once the strip
+  settles. A cached still preview is shown until the first frame is ready.
 - A `LIVE` badge marks wallpapers that animate on the desktop.
 - The picker switches between awww and mpvpaper automatically.
 - Applies wallpapers with configurable awww transitions.
@@ -43,7 +43,7 @@ Hyprland, not by the picker.
 - Quickshell (`qs`)
 - awww, including `awww-daemon`
 - mpvpaper (with its libmpv dependency), for video wallpapers
-- ffmpeg with the WebP animation encoder, for video posters and live previews
+- ffmpeg, for video posters
 - bash, coreutils, findutils, procps-ng and util-linux
 - ImageMagick 7 (`magick`)
 
@@ -122,8 +122,8 @@ documented there. The main groups are:
 - wallpaper folders;
 - awww: image/GIF extensions, transitions, resize and filter;
 - mpvpaper: video extensions, layer, mpv options and pausing when hidden;
-- thumbnail size and quality, cache and fade-in;
-- static preview size and quality, and animated preview clips;
+- thumbnail size, quality, cache, fade-in, video poster time and scan workers;
+- static preview size and quality;
 - strip height, spacing ratio, looping, coverflow/center-card scaling, the
   `LIVE` badge and its text size, and move/open animation durations;
 - overlay layer, background dim, status text size, informational messages and
@@ -150,15 +150,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   Applying an image stops mpvpaper first; applying a video stops it, starts
   the new video and clears awww so no old image or GIF keeps rendering behind
   it. This also stops an mpvpaper started outside the picker.
-- Video posters and animated previews are generated during the scan. A folder
-  with many videos makes the first scan noticeably longer; the result is
-  cached. Set `previews.animated.enabled` to `false` to skip clip generation and
-  use a static preview crop instead.
-- Animated previews are muted 2.5-second WebP clips by default and are
-  decoded only while a card is centered and the strip is not moving. Their
-  dimensions follow the static preview, so larger preview scales also make the
-  clips larger. Keep `previews.animated.duration` and `fps` moderate on
-  low-memory machines.
+- Video posters are generated during the scan, and static previews are cached
+  for every wallpaper. Videos and GIFs themselves are not cached: the center
+  card decodes them live, starting when the strip settles and stopping as soon
+  as the card leaves the center or the row starts moving.
 - GIFs are supported, but the first apply and thumbnail generation can be
   slow, and awww's cache may exceed 100 MB per GIF.
 - Scanning is non-recursive: only files directly inside the configured folders
@@ -168,6 +163,10 @@ The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
   above the picker.
 - Previews are generated and cached during the scan, like thumbnails.
   If a preview is missing or failed, that wallpaper simply does not widen.
+- Cache sizes follow the largest connected screen, so moving the picker
+  between monitors with different resolutions does not regenerate them.
+- The scan processes files in parallel; `thumbnails.workers` sets the number
+  of simultaneous conversions (0 picks it from the CPU count).
 - The picker opens on the monitor that has focus at startup and follows focus
   changes while it is open.
 

@@ -100,7 +100,6 @@ PanelWindow {
 
     WallpaperModel {
         id: model
-        screenHeight: root.targetScreen ? root.targetScreen.height : 0
     }
 
     SettingsValidator {

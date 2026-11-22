@@ -2,8 +2,7 @@
 #
 # Usage: sync-thumbs.sh <wallpaperDirs> <cacheDir> <w> <h> <thumbQuality> \
 #   <imageExts> [previewDir] [previewWidth] [previewHeight] [previewQuality] \
-#   [videoExts] [animatedPreviews] [animWidth] [animHeight] \
-#   [animDurationMs] [animFps] [animQuality] [posterSeek]
+#   [videoExts] [posterSeek] [workers]
 #
 # <wallpaperDirs> is a newline-separated list of directories. Each directory
 # is scanned non-recursively. Missing directories are reported, and the
@@ -12,14 +11,16 @@
 # Generates or reuses cached thumbnails and focused previews, and prints one
 # tab-separated manifest row per wallpaper:
 #
-#     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>\t<previewPath>\t<kind>\t<animated>
+#     <sourcePath>\t<thumbPath>\t<thumbWidth>\t<thumbHeight>\t<previewPath>\t<kind>
 #
-# <kind> is image, gif or video. <animated> is 1 when <previewPath> is an
-# animated WebP clip. Video posters and animated previews need ffmpeg.
+# <kind> is image, gif or video. Video posters need ffmpeg.
 # <previewPath> is empty only if preview generation failed.
 # ImageMagick 7 is required. Thumbnails are keyed by the source path,
 # generation options and cache version, and are regenerated when the source is
 # newer. Files that cannot be converted are skipped with a diagnostic.
+#
+# Files are processed in parallel. `workers` is clamped to a sensible default
+# when it is 0 or missing.
 
 set -uo pipefail
 
@@ -41,17 +42,13 @@ PREVIEW_W="${8:-}"
 PREVIEW_H="${9:-}"
 PREVIEW_QUALITY="${10:-88}"
 VIDEO_EXTS="${11:-}"
-ANIMATED_PREVIEWS="${12:-0}"
-ANIM_W="${13:-}"
-ANIM_H="${14:-}"
-ANIM_DURATION_MS="${15:-}"
-ANIM_FPS="${16:-}"
-ANIM_QUALITY="${17:-}"
-POSTER_SEEK="${18:-1}"
+POSTER_SEEK="${12:-1}"
+WORKERS="${13:-0}"
 
 # Thumbnails always use a centered cover crop. Kept in the cache key so
 # thumbnails generated before preserve mode was removed still match.
 MODE="cover"
+EXT="jpg"
 
 preview_enabled=0
 if [ -n "$PREVIEW_DIR" ] \
@@ -60,22 +57,13 @@ if [ -n "$PREVIEW_DIR" ] \
     preview_enabled=1
 fi
 
-animated_enabled=$preview_enabled
-if [ "$ANIMATED_PREVIEWS" = "1" ]; then
-    if ! [[ "$ANIM_W" =~ ^[1-9][0-9]*$ ]] \
-        || ! [[ "$ANIM_H" =~ ^[1-9][0-9]*$ ]] \
-        || ! [[ "$ANIM_DURATION_MS" =~ ^[1-9][0-9]*$ ]] \
-        || ! [[ "$ANIM_FPS" =~ ^[1-9][0-9]*$ ]] \
-        || ! [[ "$ANIM_QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
-        echo "sync-thumbs.sh: invalid animated preview settings" >&2
-        exit 2
-    fi
-else
-    animated_enabled=0
-fi
-
 if ! [[ "$POSTER_SEEK" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
     echo "sync-thumbs.sh: invalid poster seek: $POSTER_SEEK" >&2
+    exit 2
+fi
+
+if ! [[ "$WORKERS" =~ ^[0-9]+$ ]]; then
+    echo "sync-thumbs.sh: invalid worker count: $WORKERS" >&2
     exit 2
 fi
 
@@ -98,6 +86,13 @@ if ! [[ "$PREVIEW_QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
     echo "sync-thumbs.sh: invalid preview quality: $PREVIEW_QUALITY" >&2
     exit 2
 fi
+
+if [ "$WORKERS" -eq 0 ]; then
+    WORKERS="$(nproc 2>/dev/null || echo 4)"
+    [ "$WORKERS" -gt 8 ] && WORKERS=8
+fi
+# A typo should not spawn an unbounded number of ImageMagick processes.
+[ "$WORKERS" -gt 32 ] && WORKERS=32
 
 ROOTS=()
 declare -A seen_roots=()
@@ -162,18 +157,6 @@ fi
 HAS_FFMPEG=0
 command -v ffmpeg >/dev/null 2>&1 && HAS_FFMPEG=1
 
-# A build without the animation encoder would make every clip fail; fall back
-# to static focused crops once instead of retrying per wallpaper.
-if [ "$animated_enabled" -eq 1 ] && [ "$HAS_FFMPEG" -eq 1 ]; then
-    if ! ffmpeg -hide_banner -encoders 2>/dev/null \
-            | grep 'libwebp_anim' >/dev/null; then
-        echo "sync-thumbs.sh: ffmpeg has no WebP animation encoder; using static previews" >&2
-        animated_enabled=0
-    fi
-fi
-
-EXT="jpg"
-
 WORK="$(mktemp -d "$CACHE/.sync-thumbs.XXXXXX")" || {
     echo "sync-thumbs.sh: cannot create a temporary directory in $CACHE" >&2
     exit 1
@@ -182,33 +165,44 @@ trap 'rm -rf -- "$WORK"' EXIT
 
 list="$WORK/files"
 sorted="$WORK/sorted"
-declare -A used_names=()
+rows="$WORK/rows"
+failures="$WORK/failures"
+mkdir -p -- "$rows"
+: > "$failures"
 
-# sort -z keeps the manifest order stable, so the strip does not reshuffle
-# when files are added or removed.
-SKIP_PRUNE=0
-[ "$MISSING_DIRS" -gt 0 ] && SKIP_PRUNE=1
-SCAN_FAILED=0
-: > "$list"
-for dir in "${VALID_ROOTS[@]}"; do
-    if ! find "$dir" -maxdepth 1 -type f \( "${find_args[@]}" \) \
-            -print0 >> "$list"; then
-        echo "sync-thumbs.sh: failed to scan $dir" >&2
-        SCAN_FAILED=1
-        SKIP_PRUNE=1
-    fi
-done
-if ! sort -z "$list" > "$sorted"; then
-    echo "sync-thumbs.sh: failed to sort the file list" >&2
-    exit 1
-fi
+list_files() {
+    : > "$list"
+    for dir in "${VALID_ROOTS[@]}"; do
+        if ! find "$dir" -maxdepth 1 -type f \( "${find_args[@]}" \) \
+                -print0 >> "$list"; then
+            echo "sync-thumbs.sh: failed to scan $dir" >&2
+            return 1
+        fi
+    done
+}
 
-failed=0
+warn() {
+    printf '%s\n' "$*" >&2
+}
 
-while IFS= read -r -d '' f; do
+# fail <index> <message>
+fail() {
+    printf '%s\n' "$2" >&2
+    printf 'x\n' >> "$failures"
+    : > "$rows/$1.failed"
+}
+
+# process_file <path> <index>
+#
+# Generates the thumbnail and preview for one file and writes the manifest row
+# to $rows/<index>. Runs in a background subshell, so it must not touch shell
+# variables used by the caller.
+process_file() {
+    local f="$1" i="$2"
+    local ext is_video=0 is_gif=0 kind key key_src out final_tmp
+    local thumb_src tw th preview_path poster_frame
+
     ext="$(lower_ext "$f")"
-    is_video=0
-    is_gif=0
     if [ -n "$VIDEO_EXTS" ] && ext_in_list "$ext" "$VIDEO_EXTS"; then
         is_video=1
     elif [ "$ext" = "gif" ]; then
@@ -230,7 +224,7 @@ while IFS= read -r -d '' f; do
     key="$(printf '%s' "v${CACHE_VERSION}|$key_src|$MODE|${W}x${H}|q${THUMB_QUALITY}" | md5sum)"
     key="${key%% *}"
     out="$CACHE/$key.$EXT"
-    final_tmp="$WORK/final.$EXT"
+    final_tmp="$WORK/final-$key.$EXT"
     thumb_src="$f"
     tw="$W"
     th="$H"
@@ -240,15 +234,13 @@ while IFS= read -r -d '' f; do
 
         if [ "$is_video" -eq 1 ]; then
             if [ "$HAS_FFMPEG" -ne 1 ]; then
-                echo "sync-thumbs.sh: ffmpeg is required for video wallpapers: $f" >&2
-                failed=$((failed + 1))
-                continue
+                fail "$i" "sync-thumbs.sh: ffmpeg is required for video wallpapers: $f"
+                return 1
             fi
             thumb_src="$WORK/poster-$key.png"
             if ! video_poster "$f" "$thumb_src" "$POSTER_SEEK"; then
-                echo "sync-thumbs.sh: failed to extract a video frame: $f" >&2
-                failed=$((failed + 1))
-                continue
+                fail "$i" "sync-thumbs.sh: failed to extract a video frame: $f"
+                return 1
             fi
         fi
 
@@ -257,28 +249,24 @@ while IFS= read -r -d '' f; do
         if ! magick "$thumb_src[0]" -auto-orient -resize "${W}x${H}^" \
             -gravity center -extent "${W}x${H}" -quality "$THUMB_QUALITY" \
             "$final_tmp"; then
-            echo "sync-thumbs.sh: failed to generate thumbnail: $f" >&2
-            failed=$((failed + 1))
-            continue
+            fail "$i" "sync-thumbs.sh: failed to generate thumbnail: $f"
+            return 1
         fi
 
         if [ ! -s "$final_tmp" ]; then
-            echo "sync-thumbs.sh: empty thumbnail generated for: $f" >&2
-            failed=$((failed + 1))
-            continue
+            fail "$i" "sync-thumbs.sh: empty thumbnail generated for: $f"
+            return 1
         fi
 
         if ! mv -f -- "$final_tmp" "$out"; then
-            echo "sync-thumbs.sh: failed to store thumbnail for: $f" >&2
-            failed=$((failed + 1))
-            continue
+            fail "$i" "sync-thumbs.sh: failed to store thumbnail for: $f"
+            return 1
         fi
     fi
 
     if [ ! -f "$out" ]; then
-        echo "sync-thumbs.sh: thumbnail is missing: $out" >&2
-        failed=$((failed + 1))
-        continue
+        fail "$i" "sync-thumbs.sh: thumbnail is missing: $out"
+        return 1
     fi
 
     # A regenerated video thumbnail is already the poster frame at
@@ -287,47 +275,75 @@ while IFS= read -r -d '' f; do
     [ "$is_video" -eq 1 ] && [ "$thumb_src" != "$f" ] && poster_frame="$thumb_src"
 
     preview_path=""
-    preview_animated=0
     if [ "$preview_enabled" -eq 1 ]; then
-        if [ "$animated_enabled" -eq 1 ] && [ "$HAS_FFMPEG" -eq 1 ] \
-                && { [ "$is_video" -eq 1 ] || [ "$is_gif" -eq 1 ]; }; then
-            anim_start="$POSTER_SEEK"
-            [ "$is_gif" -eq 1 ] && anim_start="0"
-            if preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" animated \
-                "$f" "$PREVIEW_DIR" "$ANIM_W" "$ANIM_H" \
-                "$ANIM_DURATION_MS" "$ANIM_FPS" "$ANIM_QUALITY" "$anim_start")" \
-                    && [ -n "$preview_path" ]; then
-                preview_animated=1
-            else
-                # Fall back to a still crop below.
+        if [ "$is_video" -eq 1 ]; then
+            if ! preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" \
+                "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
+                "$POSTER_SEEK" "$PREVIEW_QUALITY" "$poster_frame")"; then
                 preview_path=""
+                warn "sync-thumbs.sh: failed to cache preview: $f"
             fi
-        fi
-
-        if [ -z "$preview_path" ]; then
-            if [ "$is_video" -eq 1 ]; then
-                if ! preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" still \
-                    "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                    "$POSTER_SEEK" "$PREVIEW_QUALITY" "$poster_frame")"; then
-                    preview_path=""
-                    echo "sync-thumbs.sh: failed to cache preview: $f" >&2
-                fi
-            else
-                if ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
-                    "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                    "$PREVIEW_QUALITY")"; then
-                    preview_path=""
-                    echo "sync-thumbs.sh: failed to cache preview: $f" >&2
-                fi
+        else
+            if ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
+                "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
+                "$PREVIEW_QUALITY")"; then
+                preview_path=""
+                warn "sync-thumbs.sh: failed to cache preview: $f"
             fi
         fi
     fi
 
-    used_names["$key.$EXT"]=1
-    printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$f" "$out" "$tw" "$th" "$preview_path" "$kind" "$preview_animated"
+    printf '%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$f" "$out" "$tw" "$th" "$preview_path" "$kind" > "$rows/$i"
+}
+
+SKIP_PRUNE=0
+[ "$MISSING_DIRS" -gt 0 ] && SKIP_PRUNE=1
+SCAN_FAILED=0
+
+if ! list_files; then
+    SCAN_FAILED=1
+    SKIP_PRUNE=1
+fi
+
+if ! sort -z "$list" > "$sorted"; then
+    echo "sync-thumbs.sh: failed to sort the file list" >&2
+    exit 1
+fi
+
+FILES=()
+while IFS= read -r -d '' f; do
+    FILES+=("$f")
 done < "$sorted"
 
+running=0
+for i in "${!FILES[@]}"; do
+    process_file "${FILES[$i]}" "$i" &
+    running=$((running + 1))
+    if [ "$running" -ge "$WORKERS" ]; then
+        wait -n
+        running=$((running - 1))
+    fi
+done
+wait
+
+failed="$(wc -l < "$failures" 2>/dev/null || echo 0)"
+
+# Print the manifest in the sorted order, regardless of worker completion.
+declare -A used_names=()
+for i in "${!FILES[@]}"; do
+    row="$rows/$i"
+    if [ -f "$row" ]; then
+        cat "$row"
+        name="$(awk -F'\t' 'NR == 1 { n = $2; sub(/.*\//, "", n); print n }' "$row")"
+        [ -n "$name" ] && used_names["$name"]=1
+    elif [ -f "$row.failed" ]; then
+        continue
+    else
+        echo "sync-thumbs.sh: no result for: ${FILES[$i]}" >&2
+        failed=$((failed + 1))
+    fi
+done
 
 # Prune cache entries this scan did not produce. Skip pruning when a directory
 # is missing or a scan failed, so a temporarily unavailable source cannot wipe
