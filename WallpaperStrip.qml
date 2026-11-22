@@ -57,73 +57,29 @@ Item {
         ? root._virtualIndex
         : root.currentIndex
 
-    // True once the first video player has loaded the multimedia backend.
-    // Later cards can create players without paying the startup cost.
-    property bool mediaWarm: false
-
-    // Hold live playback briefly while the window is opening or changing
-    // size. The first MediaPlayer loads the QtMultimedia backend on the GUI
-    // thread, so starting it before the first paint delays the whole overlay.
-    // The same hold pauses playback while the window moves to another monitor.
-    property bool liveSettling: true
-
-    Timer {
-        id: liveSettleTimer
-        interval: 300
-        onTriggered: root.liveSettling = false
-    }
-
-    // Warm the multimedia backend once the overlay is visible, even before a
-    // video is selected. QtMultimedia initializes synchronously, so the choice
-    // is only where to pay it: here, at open, or later on the first video.
-    Timer {
-        id: warmupTimer
-        interval: 400
-        onTriggered: {
-            if (!Config.previews.live.enabled)
-                return;
-            if (!root.liveEnabled || root.mediaWarm)
-                return;
-            if (!root.items.some(item => item && item.video === true))
-                return;
-            mediaWarmup.active = true;
-        }
-    }
-
-    Loader {
-        id: mediaWarmup
-        active: false
-        asynchronous: true
-
-        sourceComponent: Component {
-            MediaPlayer {
-                audioOutput: AudioOutput { muted: true }
-            }
-        }
-
-        onLoaded: {
-            root.mediaWarm = true;
-            active = false;
-        }
-    }
-
-    function holdLive() {
-        root.liveSettling = true;
-        liveSettleTimer.restart();
-    }
-
-    onWidthChanged: root.holdLive()
-    onHeightChanged: root.holdLive()
-    onLiveEnabledChanged: {
-        if (root.liveEnabled) {
-            root.holdLive();
-            if (!root.mediaWarm)
-                warmupTimer.restart();
-        }
-    }
-
     // True while the row is still moving toward targetPosition.
     readonly property bool moving: Math.abs(position - targetPosition) > 0.001
+
+    // Rapid wheel steps flip `moving` on and off. Wait for a short idle period
+    // before starting a player so scrolling does not create and destroy one
+    // per step. This is not a prewarm: nothing is loaded until a video card is
+    // actually centered and the strip is idle.
+    property bool liveIdle: false
+
+    Timer {
+        id: liveIdleTimer
+        interval: 180
+        onTriggered: root.liveIdle = true
+    }
+
+    onMovingChanged: {
+        if (root.moving) {
+            root.liveIdle = false;
+            liveIdleTimer.stop();
+        } else {
+            liveIdleTimer.restart();
+        }
+    }
 
     // Scroll position in index units; fractional while animating.
     property real position: 0
@@ -492,15 +448,12 @@ Item {
     onItemsChanged: {
         updateWindow(true);
         refreshSlots();
-        if (root.liveEnabled && !root.mediaWarm)
-            warmupTimer.restart();
     }
     onWindowSizeChanged: updateWindow(true)
     Component.onCompleted: {
         updateWindow(true);
         refreshSlots();
-        liveSettleTimer.start();
-        warmupTimer.start();
+        liveIdleTimer.start();
     }
 
     function scaleForIndex(i) {
@@ -614,7 +567,7 @@ Item {
                 root.liveEnabled && Config.previews.live.enabled
                     && cell.entry !== null
                     && cell.centerWeight > 0.001
-                    && !root.moving && !root.liveSettling
+                    && !root.moving && root.liveIdle
             readonly property bool videoLive:
                 cell.liveActive && cell.entry !== null
                     && cell.entry.video === true
@@ -690,15 +643,11 @@ Item {
                 onStatusChanged: cell.previewLoaded = (status === Image.Ready)
             }
 
-            // Keep the player alive while the video is centered so a window
-            // resize pauses it instead of destroying and recreating it. Before
-            // the backend is warm, creation waits for the settle delay.
+            // Live video playback. The player exists only while the card is
+            // centered and the strip is idle; scrolling destroys it.
             Loader {
                 anchors.fill: parent
-                active: Config.previews.live.enabled
-                    && cell.entry !== null && cell.entry.video === true
-                    && cell.centerWeight > 0.001 && root.liveEnabled
-                    && (!root.liveSettling || root.mediaWarm)
+                active: cell.videoLive
                 asynchronous: true
 
                 sourceComponent: Component {
@@ -707,25 +656,6 @@ Item {
                         anchors.fill: parent
 
                         property bool seeked: false
-
-                        function syncPlayback() {
-                            if (cell.videoLive)
-                                videoPlayer.play();
-                            else
-                                videoPlayer.pause();
-                        }
-
-                        Component.onCompleted: {
-                            root.mediaWarm = true;
-                            syncPlayback();
-                        }
-
-                        Connections {
-                            target: cell
-                            function onVideoLiveChanged() {
-                                videoRoot.syncPlayback();
-                            }
-                        }
 
                         MediaPlayer {
                             id: videoPlayer
@@ -749,7 +679,7 @@ Item {
                                     position = Math.max(0, Math.round(
                                         Config.thumbnails.videoPosterSeek * 1000));
                                 }
-                                videoRoot.syncPlayback();
+                                play();
                             }
                         }
 
