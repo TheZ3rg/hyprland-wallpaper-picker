@@ -2,7 +2,7 @@
 #
 # Usage:
 #   video-preview.sh still <source> <cacheDir> <width> <height> <seekSeconds> \
-#       [quality]
+#       [quality] [preExtractedFrame]
 #   video-preview.sh animated <source> <cacheDir> <width> <height> \
 #       <durationMs> <fps> <quality> [startSeconds]
 #
@@ -56,6 +56,7 @@ trap 'rm -rf -- "$WORK"' EXIT
 if [ "$MODE" = "still" ]; then
     SEEK="${6:-0}"
     QUALITY="${7:-88}"
+    FRAME="${8:-}"
 
     if ! [[ "$QUALITY" =~ ^[1-9][0-9]?$|^100$ ]]; then
         echo "video-preview.sh: invalid quality: $QUALITY" >&2
@@ -67,10 +68,13 @@ if [ "$MODE" = "still" ]; then
     out="$CACHE/$key.jpg"
 
     if [ ! -f "$out" ] || [ "$SRC" -nt "$out" ]; then
-        frame="$WORK/frame.png"
-        if ! video_poster "$SRC" "$frame" "$SEEK"; then
-            echo "video-preview.sh: failed to extract a frame: $SRC" >&2
-            exit 1
+        frame="$FRAME"
+        if [ -z "$frame" ] || [ ! -s "$frame" ]; then
+            frame="$WORK/frame.png"
+            if ! video_poster "$SRC" "$frame" "$SEEK"; then
+                echo "video-preview.sh: failed to extract a frame: $SRC" >&2
+                exit 1
+            fi
         fi
 
         tmp="$WORK/preview.jpg"

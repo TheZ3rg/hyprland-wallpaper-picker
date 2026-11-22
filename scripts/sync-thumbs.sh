@@ -230,14 +230,13 @@ while IFS= read -r -d '' f; do
     key="$(printf '%s' "v${CACHE_VERSION}|$key_src|$MODE|${W}x${H}|q${THUMB_QUALITY}" | md5sum)"
     key="${key%% *}"
     out="$CACHE/$key.$EXT"
-    tmp="$WORK/thumb.png"
     final_tmp="$WORK/final.$EXT"
     thumb_src="$f"
     tw="$W"
     th="$H"
 
     if [ ! -f "$out" ] || [ "$f" -nt "$out" ]; then
-        rm -f -- "$tmp" "$final_tmp"
+        rm -f -- "$final_tmp"
 
         if [ "$is_video" -eq 1 ]; then
             if [ "$HAS_FFMPEG" -ne 1 ]; then
@@ -256,21 +255,15 @@ while IFS= read -r -d '' f; do
         # Render to a temporary file first so an interrupted convert never
         # leaves a truncated thumbnail in the cache.
         if ! magick "$thumb_src[0]" -auto-orient -resize "${W}x${H}^" \
-            -gravity center -extent "${W}x${H}" "$tmp"; then
+            -gravity center -extent "${W}x${H}" -quality "$THUMB_QUALITY" \
+            "$final_tmp"; then
             echo "sync-thumbs.sh: failed to generate thumbnail: $f" >&2
             failed=$((failed + 1))
             continue
         fi
 
-
-        if [ ! -s "$tmp" ]; then
+        if [ ! -s "$final_tmp" ]; then
             echo "sync-thumbs.sh: empty thumbnail generated for: $f" >&2
-            failed=$((failed + 1))
-            continue
-        fi
-
-        if ! magick "$tmp" -quality "$THUMB_QUALITY" "$final_tmp"; then
-            echo "sync-thumbs.sh: failed to write thumbnail: $f" >&2
             failed=$((failed + 1))
             continue
         fi
@@ -287,6 +280,11 @@ while IFS= read -r -d '' f; do
         failed=$((failed + 1))
         continue
     fi
+
+    # A regenerated video thumbnail is already the poster frame at
+    # POSTER_SEEK; reuse it for a still preview instead of decoding twice.
+    poster_frame=""
+    [ "$is_video" -eq 1 ] && [ "$thumb_src" != "$f" ] && poster_frame="$thumb_src"
 
     preview_path=""
     preview_animated=0
@@ -310,7 +308,7 @@ while IFS= read -r -d '' f; do
             if [ "$is_video" -eq 1 ]; then
                 if ! preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" still \
                     "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                    "$POSTER_SEEK" "$PREVIEW_QUALITY")"; then
+                    "$POSTER_SEEK" "$PREVIEW_QUALITY" "$poster_frame")"; then
                     preview_path=""
                     echo "sync-thumbs.sh: failed to cache preview: $f" >&2
                 fi
