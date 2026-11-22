@@ -330,6 +330,9 @@ PanelWindow {
     Rectangle {
         id: statusBox
         z: 2000
+
+        readonly property int fontSize: Config.overlay.statusFontSize
+
         visible: root.statusText !== ""
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom
@@ -337,34 +340,34 @@ PanelWindow {
         // anchored there, so the two never overlap.
         anchors.bottomMargin: (Config.search.enabled
             && Config.search.verticalAlignment === "bottom")
-            ? Math.max(ScreenMetrics.px(32),
+            ? Math.max(32,
                 searchField.edgeMargin + searchField.height
-                    + ScreenMetrics.px(12))
-            : ScreenMetrics.px(32)
-        width: Math.min(parent.width - ScreenMetrics.px(64),
-            Math.max(ScreenMetrics.px(180),
-                statusMetrics.width + ScreenMetrics.px(32)))
-        height: statusText.contentHeight + ScreenMetrics.px(24)
-        radius: ScreenMetrics.px(8)
+                    + 12)
+            : 32
+        width: Math.min(parent.width - 64,
+            Math.max(180,
+                statusMetrics.width + 2 * statusBox.fontSize))
+        height: statusText.contentHeight + Math.round(statusBox.fontSize * 1.5)
+        radius: Math.round(statusBox.fontSize * 0.5)
         color: root.statusIsError
             ? Qt.rgba(0.30, 0.04, 0.04, 0.94)
             : Qt.rgba(0, 0, 0, 0.78)
-        border.width: ScreenMetrics.hairline()
+        border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.12)
 
         TextMetrics {
             id: statusMetrics
             text: root.statusText
-            font.pixelSize: ScreenMetrics.px(16)
+            font.pixelSize: statusBox.fontSize
         }
 
         Text {
             id: statusText
             anchors.centerIn: parent
-            width: statusBox.width - ScreenMetrics.px(32)
+            width: statusBox.width - 2 * statusBox.fontSize
             text: root.statusText
             color: "white"
-            font.pixelSize: ScreenMetrics.px(16)
+            font.pixelSize: statusBox.fontSize
             wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter
         }

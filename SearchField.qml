@@ -46,12 +46,17 @@ Rectangle {
     readonly property int edgeMargin:
         Math.max(0, Math.round(parent.height * Config.search.marginRatio))
 
-    width: Math.max(ScreenMetrics.px(140),
-        Math.min(ScreenMetrics.px(420), parent.width - 2 * root.edgeMargin))
-    height: ScreenMetrics.px(44)
-    radius: ScreenMetrics.px(10)
+    width: Math.max(0,
+        Math.min(Config.search.fieldWidth, parent.width - 2 * root.edgeMargin))
+    height: Config.search.fieldHeight
+    radius: Math.round(height * 0.23)
+
+    readonly property int textSize: Math.round(height * 0.36)
+    readonly property int padding: Math.round(height * 0.32)
+    readonly property int hintSize: Math.round(height * 0.27)
+
     color: Qt.rgba(0, 0, 0, root.editing ? 0.84 : 0.62)
-    border.width: ScreenMetrics.hairline()
+    border.width: 1
     border.color: root.editing ? Qt.rgba(1, 1, 1, 0.38) : Qt.rgba(1, 1, 1, 0.12)
     opacity: root.editing ? 1 : Config.search.unfocusedOpacity
 
@@ -85,26 +90,26 @@ Rectangle {
 
     Text {
         anchors.left: parent.left
-        anchors.leftMargin: ScreenMetrics.px(14)
+        anchors.leftMargin: root.padding
         anchors.verticalCenter: parent.verticalCenter
         visible: input.text === ""
         text: "Search wallpapers"
         color: "white"
         opacity: 0.45
-        font.pixelSize: ScreenMetrics.px(16)
+        font.pixelSize: root.textSize
     }
 
     TextInput {
         id: input
 
         anchors.fill: parent
-        anchors.leftMargin: ScreenMetrics.px(14)
-        anchors.rightMargin: ScreenMetrics.px(14)
+        anchors.leftMargin: root.padding
+        anchors.rightMargin: root.padding
         verticalAlignment: TextInput.AlignVCenter
         color: "white"
         selectionColor: Qt.rgba(1, 1, 1, 0.25)
         selectedTextColor: "white"
-        font.pixelSize: ScreenMetrics.px(16)
+        font.pixelSize: root.textSize
         clip: true
         activeFocusOnPress: true
 
@@ -138,13 +143,13 @@ Rectangle {
     // the placeholder.
     Text {
         anchors.right: parent.right
-        anchors.rightMargin: ScreenMetrics.px(12)
+        anchors.rightMargin: root.hintSize
         anchors.verticalCenter: parent.verticalCenter
         visible: !root.editing && input.text === ""
-            && root.width >= ScreenMetrics.px(280)
+            && root.width >= root.height * 6.36
         text: "Ctrl+F"
         color: "white"
         opacity: 0.30
-        font.pixelSize: ScreenMetrics.px(12)
+        font.pixelSize: root.hintSize
     }
 }

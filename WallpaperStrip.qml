@@ -45,6 +45,7 @@ Item {
     readonly property real baseWidth: height * Config.thumbnails.widthRatio
     readonly property real gap:
         Math.max(0, Math.round(height * Config.strip.spacingRatio))
+    readonly property int liveBadgeFontSize: Config.strip.liveBadgeFontSize
 
     // Position of the current target in index units.
     readonly property real targetPosition: root.endless
@@ -639,7 +640,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 color: "transparent"
-                border.width: ScreenMetrics.hairline()
+                border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.10)
             }
 
@@ -649,15 +650,16 @@ Item {
 
                 visible: Config.strip.showLiveBadge && cell.entry
                     && cell.entry.live === true
-                    && cell.width >= ScreenMetrics.px(56)
+                    && cell.width >= root.liveBadgeFontSize * 5.6
                 anchors.left: parent.left
                 anchors.bottom: parent.bottom
-                anchors.margins: ScreenMetrics.px(6)
-                width: liveBadgeLabel.implicitWidth + ScreenMetrics.px(10)
-                height: liveBadgeLabel.implicitHeight + ScreenMetrics.px(4)
-                radius: ScreenMetrics.px(4)
+                anchors.margins: Math.round(root.liveBadgeFontSize * 0.6)
+                width: liveBadgeLabel.implicitWidth + root.liveBadgeFontSize
+                height: liveBadgeLabel.implicitHeight
+                    + Math.round(root.liveBadgeFontSize * 0.4)
+                radius: Math.round(root.liveBadgeFontSize * 0.4)
                 color: Qt.rgba(0, 0, 0, 0.65)
-                border.width: ScreenMetrics.hairline()
+                border.width: 1
                 border.color: Qt.rgba(1, 1, 1, 0.15)
 
                 Text {
@@ -665,7 +667,7 @@ Item {
                     anchors.centerIn: parent
                     text: "LIVE"
                     color: "white"
-                    font.pixelSize: ScreenMetrics.px(10)
+                    font.pixelSize: root.liveBadgeFontSize
                     font.bold: true
                 }
             }

@@ -370,6 +370,12 @@ Singleton {
 
         /// Show the "LIVE" badge on video and GIF tiles.
         property bool showLiveBadge: true
+
+        /// Text size of the "LIVE" badge, in logical pixels.
+        ///
+        /// The badge's padding, corner radius and the tile width at which it
+        /// is hidden follow this size.
+        property int liveBadgeFontSize: 10
     }
 
     // ── OVERLAY WINDOW ────────────────────────────────────────
@@ -398,6 +404,12 @@ Singleton {
         /// hint. Errors are always shown.
         property bool showInfoNotifications: true
 
+        /// Text size of the status message at the bottom, in logical pixels.
+        ///
+        /// The box's padding and corner radius follow this size. Errors are
+        /// shown at this size too.
+        property int statusFontSize: 14
+
         /// Close the picker after a wallpaper has been applied successfully.
         property bool closeOnApply: true
     }
@@ -420,6 +432,18 @@ Singleton {
         ///
         /// Invalid values raise an error and block applying.
         property string mode: "scroll"
+
+        /// Height of the search field, in logical pixels.
+        ///
+        /// The font, padding and corner radius follow this height, so the
+        /// field stays proportional when it is resized.
+        property int fieldHeight: 44
+
+        /// Width of the search field, in logical pixels.
+        ///
+        /// The field uses this width when there is room and shrinks on
+        /// narrower screens.
+        property int fieldWidth: 400
 
         /// Horizontal position of the search field.
         ///

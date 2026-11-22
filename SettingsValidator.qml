@@ -108,15 +108,21 @@ Item {
             Config.strip.coverflow.edgeScale);
         positive(out, "strip.coverflow.falloffRange",
             Config.strip.coverflow.falloffRange);
+        positive(out, "strip.liveBadgeFontSize",
+            Config.strip.liveBadgeFontSize);
 
         // Overlay
         oneOf(out, "overlay.layer", Config.overlay.layer,
             ["background", "bottom", "top", "overlay"]);
         between(out, "overlay.backgroundDim", Config.overlay.backgroundDim,
             0, 1);
+        positive(out, "overlay.statusFontSize",
+            Config.overlay.statusFontSize);
 
         // Search
         oneOf(out, "search.mode", Config.search.mode, ["scroll", "filter"]);
+        positive(out, "search.fieldHeight", Config.search.fieldHeight);
+        positive(out, "search.fieldWidth", Config.search.fieldWidth);
         oneOf(out, "search.horizontalAlignment",
             Config.search.horizontalAlignment, ["left", "center", "right"]);
         oneOf(out, "search.verticalAlignment",
