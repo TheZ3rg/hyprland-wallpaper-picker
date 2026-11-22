@@ -123,7 +123,7 @@ documented there. The main groups are:
 - awww: image/GIF extensions, transitions, resize and filter;
 - mpvpaper: video extensions, layer, mpv options and pausing when hidden;
 - thumbnail size, quality, cache, fade-in, video poster time and scan workers;
-- static preview size and quality;
+- static preview size and quality, and live playback on/off;
 - strip height, spacing ratio, looping, coverflow/center-card scaling, the
   `LIVE` badge and its text size, and move/open animation durations;
 - overlay layer, background dim, status text size, informational messages and

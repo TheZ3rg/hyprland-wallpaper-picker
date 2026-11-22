@@ -80,6 +80,8 @@ Item {
         id: warmupTimer
         interval: 400
         onTriggered: {
+            if (!Config.previews.live.enabled)
+                return;
             if (!root.liveEnabled || root.mediaWarm)
                 return;
             if (!root.items.some(item => item && item.video === true))
@@ -609,7 +611,8 @@ Item {
             // Live playback starts only when the row is settled, so scrolling
             // never fights a decoder.
             readonly property bool liveActive:
-                root.liveEnabled && cell.entry !== null
+                root.liveEnabled && Config.previews.live.enabled
+                    && cell.entry !== null
                     && cell.centerWeight > 0.001
                     && !root.moving && !root.liveSettling
             readonly property bool videoLive:
@@ -692,7 +695,8 @@ Item {
             // the backend is warm, creation waits for the settle delay.
             Loader {
                 anchors.fill: parent
-                active: cell.entry !== null && cell.entry.video === true
+                active: Config.previews.live.enabled
+                    && cell.entry !== null && cell.entry.video === true
                     && cell.centerWeight > 0.001 && root.liveEnabled
                     && (!root.liveSettling || root.mediaWarm)
                 asynchronous: true

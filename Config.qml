@@ -293,6 +293,15 @@ Singleton {
         ///
         /// Example: "/home/user/.cache/qs-wallpaper-picker/previews"
         property string cacheDir: root.thumbnails.cacheDir + "/previews"
+
+        /// Play videos and GIFs in the center card.
+        property QtObject live: QtObject {
+            /// Enable live playback.
+            ///
+            /// When false, videos and GIFs show only their static preview and
+            /// the multimedia backend is never loaded.
+            property bool enabled: true
+        }
     }
 
     // ── STRIP AND COVERFLOW ───────────────────────────────────
