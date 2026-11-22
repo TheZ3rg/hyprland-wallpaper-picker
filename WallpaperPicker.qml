@@ -142,6 +142,7 @@ PanelWindow {
         id: strip
         anchors.fill: parent
         items: []
+        liveEnabled: root.visible
         onActivated: index => {
             // A click applies immediately and leaves the field, so later
             // typing does not silently change the query.

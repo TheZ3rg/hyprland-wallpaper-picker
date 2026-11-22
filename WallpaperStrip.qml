@@ -26,6 +26,10 @@ Item {
     // { path, source, thumb, aspect, preview, live, video, gif }.
     property var items: []
 
+    // False while the picker window is hidden. Live playback must not load the
+    // multimedia backend before the first frame is on screen.
+    property bool liveEnabled: true
+
     // Assigning this animates `position` to the new index.
     property int currentIndex: 0
 
@@ -52,6 +56,69 @@ Item {
     readonly property real targetPosition: root.endless
         ? root._virtualIndex
         : root.currentIndex
+
+    // True once the first video player has loaded the multimedia backend.
+    // Later cards can create players without paying the startup cost.
+    property bool mediaWarm: false
+
+    // Hold live playback briefly while the window is opening or changing
+    // size. The first MediaPlayer loads the QtMultimedia backend on the GUI
+    // thread, so starting it before the first paint delays the whole overlay.
+    // The same hold pauses playback while the window moves to another monitor.
+    property bool liveSettling: true
+
+    Timer {
+        id: liveSettleTimer
+        interval: 300
+        onTriggered: root.liveSettling = false
+    }
+
+    // Warm the multimedia backend once the overlay is visible, even before a
+    // video is selected. QtMultimedia initializes synchronously, so the choice
+    // is only where to pay it: here, at open, or later on the first video.
+    Timer {
+        id: warmupTimer
+        interval: 400
+        onTriggered: {
+            if (!root.liveEnabled || root.mediaWarm)
+                return;
+            if (!root.items.some(item => item && item.video === true))
+                return;
+            mediaWarmup.active = true;
+        }
+    }
+
+    Loader {
+        id: mediaWarmup
+        active: false
+        asynchronous: true
+
+        sourceComponent: Component {
+            MediaPlayer {
+                audioOutput: AudioOutput { muted: true }
+            }
+        }
+
+        onLoaded: {
+            root.mediaWarm = true;
+            active = false;
+        }
+    }
+
+    function holdLive() {
+        root.liveSettling = true;
+        liveSettleTimer.restart();
+    }
+
+    onWidthChanged: root.holdLive()
+    onHeightChanged: root.holdLive()
+    onLiveEnabledChanged: {
+        if (root.liveEnabled) {
+            root.holdLive();
+            if (!root.mediaWarm)
+                warmupTimer.restart();
+        }
+    }
 
     // True while the row is still moving toward targetPosition.
     readonly property bool moving: Math.abs(position - targetPosition) > 0.001
@@ -423,11 +490,15 @@ Item {
     onItemsChanged: {
         updateWindow(true);
         refreshSlots();
+        if (root.liveEnabled && !root.mediaWarm)
+            warmupTimer.restart();
     }
     onWindowSizeChanged: updateWindow(true)
     Component.onCompleted: {
         updateWindow(true);
         refreshSlots();
+        liveSettleTimer.start();
+        warmupTimer.start();
     }
 
     function scaleForIndex(i) {
@@ -538,7 +609,9 @@ Item {
             // Live playback starts only when the row is settled, so scrolling
             // never fights a decoder.
             readonly property bool liveActive:
-                cell.entry !== null && cell.centerWeight > 0.001 && !root.moving
+                root.liveEnabled && cell.entry !== null
+                    && cell.centerWeight > 0.001
+                    && !root.moving && !root.liveSettling
             readonly property bool videoLive:
                 cell.liveActive && cell.entry !== null
                     && cell.entry.video === true
@@ -614,11 +687,15 @@ Item {
                 onStatusChanged: cell.previewLoaded = (status === Image.Ready)
             }
 
-            // Muted live playback for the selected video. The loader is
-            // destroyed when the card leaves the center, which stops decoding.
+            // Keep the player alive while the video is centered so a window
+            // resize pauses it instead of destroying and recreating it. Before
+            // the backend is warm, creation waits for the settle delay.
             Loader {
                 anchors.fill: parent
-                active: cell.videoLive
+                active: cell.entry !== null && cell.entry.video === true
+                    && cell.centerWeight > 0.001 && root.liveEnabled
+                    && (!root.liveSettling || root.mediaWarm)
+                asynchronous: true
 
                 sourceComponent: Component {
                     Item {
@@ -626,6 +703,25 @@ Item {
                         anchors.fill: parent
 
                         property bool seeked: false
+
+                        function syncPlayback() {
+                            if (cell.videoLive)
+                                videoPlayer.play();
+                            else
+                                videoPlayer.pause();
+                        }
+
+                        Component.onCompleted: {
+                            root.mediaWarm = true;
+                            syncPlayback();
+                        }
+
+                        Connections {
+                            target: cell
+                            function onVideoLiveChanged() {
+                                videoRoot.syncPlayback();
+                            }
+                        }
 
                         MediaPlayer {
                             id: videoPlayer
@@ -649,7 +745,7 @@ Item {
                                     position = Math.max(0, Math.round(
                                         Config.thumbnails.videoPosterSeek * 1000));
                                 }
-                                play();
+                                videoRoot.syncPlayback();
                             }
                         }
 
