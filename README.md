@@ -125,10 +125,11 @@ documented there. The main groups are:
 - thumbnail size and quality, cache and fade-in;
 - static preview size and quality, and animated preview clips;
 - strip height, spacing ratio, looping, coverflow/center-card scaling, the
-  `LIVE` badge and move/open animation durations;
-- overlay layer, background dim, informational messages and close behaviour;
-- search enabled, mode, field position, margin ratio, opacity and animation
-  duration.
+  `LIVE` badge and its text size, and move/open animation durations;
+- overlay layer, background dim, status text size, informational messages and
+  close behaviour;
+- search enabled, mode, field size and position, margin ratio, opacity and
+  animation duration.
 
 The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
