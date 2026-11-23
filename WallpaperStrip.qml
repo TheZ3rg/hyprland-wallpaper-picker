@@ -1,4 +1,5 @@
 import QtQuick
+import QtMultimedia
 
 /**
  * Horizontal coverflow strip of wallpapers.
@@ -22,8 +23,12 @@ Item {
     id: root
 
     // Flat list from WallpaperModel:
-    // { path, thumb, aspect, preview, live, video, animated }.
+    // { path, source, thumb, aspect, preview, live, video, gif }.
     property var items: []
+
+    // False while the picker window is hidden. Live playback must not load the
+    // multimedia backend before the first frame is on screen.
+    property bool liveEnabled: true
 
     // Assigning this animates `position` to the new index.
     property int currentIndex: 0
@@ -38,6 +43,7 @@ Item {
 
     signal activated(int index)
     signal navigated()
+    signal thumbDecoded()
 
     readonly property int count: items.length
     readonly property bool endless: Config.strip.loop
@@ -54,6 +60,44 @@ Item {
 
     // True while the row is still moving toward targetPosition.
     readonly property bool moving: Math.abs(position - targetPosition) > 0.001
+
+    // Rapid wheel steps flip `moving` on and off. Wait for a short idle period
+    // before starting a player so scrolling does not create and destroy one
+    // per step. This is not a prewarm: nothing is loaded until a video card is
+    // actually centered and the strip is idle.
+    property bool liveIdle: false
+
+    Timer {
+        id: liveIdleTimer
+        interval: 180
+        onTriggered: root.liveIdle = true
+    }
+
+    // The first MediaPlayer blocks the GUI thread while it loads the
+    // multimedia backend. Starting it during the thumbnail fade-in freezes
+    // the opacity animations and leaves the strip translucent. Wait until no
+    // new thumbnail has decoded for the whole fade duration.
+    property bool fadesSettled: false
+
+    Timer {
+        id: fadeSettleTimer
+        interval: Math.max(0, Config.thumbnails.fadeInDuration) + 100
+        onTriggered: root.fadesSettled = true
+    }
+
+    onThumbDecoded: {
+        root.fadesSettled = false;
+        fadeSettleTimer.restart();
+    }
+
+    onMovingChanged: {
+        if (root.moving) {
+            root.liveIdle = false;
+            liveIdleTimer.stop();
+        } else {
+            liveIdleTimer.restart();
+        }
+    }
 
     // Scroll position in index units; fractional while animating.
     property real position: 0
@@ -427,6 +471,8 @@ Item {
     Component.onCompleted: {
         updateWindow(true);
         refreshSlots();
+        liveIdleTimer.start();
+        fadeSettleTimer.start();
     }
 
     function scaleForIndex(i) {
@@ -531,25 +577,26 @@ Item {
                 : 0
             readonly property string previewUrl:
                 cell.entry ? (cell.entry.preview ?? "") : ""
-            readonly property bool animatedPreview:
-                cell.entry ? (cell.entry.animated === true) : false
             readonly property bool previewActive:
                 cell.previewUrl !== "" && cell.centerWeight > 0.001
 
-            // Animated clips play only when the row is settled. While moving,
-            // the center card keeps showing the static first frame.
-            readonly property bool livePreviewActive:
-                cell.animatedPreview && cell.previewActive && !root.moving
-
-            // Keep the first frame visible while a clip loads.
-            readonly property bool staticPreviewActive:
-                cell.previewActive && (!cell.animatedPreview
-                    || !(cell.livePreviewActive && cell.livePreviewLoaded))
+            // Live playback starts only when the row is settled, so scrolling
+            // never fights a decoder.
+            readonly property bool liveActive:
+                root.liveEnabled && Config.previews.live.enabled
+                    && cell.entry !== null
+                    && cell.centerWeight > 0.001
+                    && !root.moving && root.liveIdle && root.fadesSettled
+            readonly property bool videoLive:
+                cell.liveActive && cell.entry !== null
+                    && cell.entry.video === true
+            readonly property bool gifLive:
+                cell.liveActive && cell.entry !== null
+                    && cell.entry.gif === true
 
             // True once the preview image has decoded. The base thumbnail is
             // hidden then, so the two crops never overlap visually.
             property bool previewLoaded: false
-            property bool livePreviewLoaded: false
 
             // The derived window already includes the preload margin, so every
             // slot that exists is kept loaded.
@@ -590,50 +637,97 @@ Item {
                     // Reveal failed thumbnails too; otherwise a broken file
                     // would stay invisible instead of showing as an error.
                     if (status === Image.Ready || status === Image.Error) {
+                        const wasDecoded = cell.decoded;
                         cell.decodedUrl = cell.thumbUrl;
                         if (cell.thumbUrl !== "")
                             root.decodedUrls[cell.thumbUrl] = true;
+                        if (!wasDecoded)
+                            root.thumbDecoded();
                     }
                 }
             }
 
-            // Wider, higher-resolution crop shown once the center card's
-            // preview is ready. For animated wallpapers this is the first
-            // frame of the clip until the clip itself is loaded. It stays
-            // opaque; the widening animation reveals more of it instead of
-            // cross-fading over the thumbnail.
+            // Wider, higher-resolution crop shown before live playback. Videos
+            // and GIFs keep this frame visible until their first live frame is
+            // ready.
             Image {
                 id: previewImage
 
                 anchors.fill: parent
-                source: cell.staticPreviewActive ? cell.previewUrl : ""
+                source: cell.previewActive ? cell.previewUrl : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: true
                 smooth: true
-                opacity: (cell.staticPreviewActive && cell.previewLoaded) ? 1 : 0
+                opacity: (cell.previewActive && cell.previewLoaded) ? 1 : 0
 
                 onSourceChanged: cell.previewLoaded = false
                 onStatusChanged: cell.previewLoaded = (status === Image.Ready)
             }
 
-            // Muted looping clip for the selected video or GIF. It replaces
-            // the static first frame once decoded and pauses as soon as the
-            // card leaves the center.
-            AnimatedImage {
-                id: livePreviewImage
-
+            // Live video playback. The player exists only while the card is
+            // centered and the strip is idle; scrolling destroys it.
+            Loader {
                 anchors.fill: parent
-                source: cell.livePreviewActive ? cell.previewUrl : ""
+                active: cell.videoLive
+                asynchronous: true
+
+                sourceComponent: Component {
+                    Item {
+                        id: videoRoot
+                        anchors.fill: parent
+
+                        property bool seeked: false
+
+                        MediaPlayer {
+                            id: videoPlayer
+
+                            source: cell.entry ? cell.entry.source : ""
+                            videoOutput: videoSurface
+                            audioOutput: AudioOutput { muted: true }
+                            loops: MediaPlayer.Infinite
+                            autoPlay: false
+
+                            onSourceChanged: {
+                                videoRoot.seeked = false;
+                            }
+
+                            onMediaStatusChanged: {
+                                if (mediaStatus !== MediaPlayer.LoadedMedia
+                                        && mediaStatus !== MediaPlayer.BufferedMedia)
+                                    return;
+                                if (!videoRoot.seeked) {
+                                    videoRoot.seeked = true;
+                                    position = Math.max(0, Math.round(
+                                        Config.thumbnails.videoPosterSeek * 1000));
+                                }
+                                play();
+                            }
+                        }
+
+                        VideoOutput {
+                            id: videoSurface
+                            anchors.fill: parent
+                            fillMode: VideoOutput.PreserveAspectCrop
+                            visible: videoPlayer.playbackState
+                                    === MediaPlayer.PlayingState
+                                && videoPlayer.hasVideo
+                        }
+                    }
+                }
+            }
+
+            // Animated GIFs play from the original file. The static preview
+            // stays visible until the first frame decodes.
+            AnimatedImage {
+                anchors.fill: parent
+                source: cell.gifLive && cell.entry ? cell.entry.source : ""
                 fillMode: Image.PreserveAspectCrop
                 asynchronous: true
                 cache: false
                 smooth: true
-                paused: !cell.livePreviewActive
-                opacity: (cell.livePreviewActive && cell.livePreviewLoaded) ? 1 : 0
-
-                onSourceChanged: cell.livePreviewLoaded = false
-                onStatusChanged: cell.livePreviewLoaded = (status === Image.Ready)
+                playing: cell.gifLive
+                visible: cell.gifLive && status === Image.Ready
             }
 
             // A faint outline keeps dark wallpapers distinguishable.

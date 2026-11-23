@@ -2,7 +2,8 @@
 #
 # Shared video helpers. Source this file; do not execute it.
 
-# Bump this when the preview output changes so cached clips are not reused.
+# Bump this when the still preview output changes so cached previews are not
+# reused.
 VIDEO_PREVIEW_VERSION=1
 
 # Lower-cased extension of a path, without the dot.

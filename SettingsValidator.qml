@@ -85,16 +85,13 @@ Item {
             Config.thumbnails.fadeInDuration);
         nonNegative(out, "thumbnails.videoPosterSeek",
             Config.thumbnails.videoPosterSeek);
+        nonNegative(out, "thumbnails.workers",
+            Config.thumbnails.workers);
 
         // Previews
         positive(out, "previews.widthScale", Config.previews.widthScale);
         positive(out, "previews.heightScale", Config.previews.heightScale);
         between(out, "previews.quality", Config.previews.quality, 1, 100);
-        positive(out, "previews.animated.duration",
-            Config.previews.animated.duration);
-        positive(out, "previews.animated.fps", Config.previews.animated.fps);
-        between(out, "previews.animated.quality",
-            Config.previews.animated.quality, 1, 100);
 
         // Strip
         nonNegative(out, "strip.spacingRatio", Config.strip.spacingRatio);

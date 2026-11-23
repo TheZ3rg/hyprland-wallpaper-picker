@@ -20,7 +20,7 @@ Item {
     height: 0
 
     // Flat list from WallpaperModel:
-    // { path, thumb, aspect, preview, live, video, animated }.
+    // { path, source, thumb, aspect, preview, live, video, gif }.
     property var items: []
 
     property string query: ""

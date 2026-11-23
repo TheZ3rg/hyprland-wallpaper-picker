@@ -18,11 +18,54 @@ PanelWindow {
 
     readonly property var targetScreen: ScreenMetrics.screen
 
+    // Apply the first screen immediately. Later focus changes are coalesced
+    // on the next event-loop turn: with follow_mouse, crossing the pointer
+    // between outputs can emit several focus changes in one batch, and moving
+    // the window synchronously from that handler can remap the layer surface
+    // (and its video texture) more than once.
+    property var _appliedScreen: null
+    property var _pendingScreen: null
+    property bool _screenResolved: false
+
     // The first output is only a hidden backing screen until the focused
     // monitor resolves; it follows focus after that.
-    screen: root.targetScreen ?? Quickshell.screens[0]
+    screen: root._appliedScreen ?? Quickshell.screens[0]
 
     property bool _shown: false
+
+    Timer {
+        id: screenSettleTimer
+        // A zero interval still defers to the next event-loop turn.
+        interval: 0
+        onTriggered: {
+            if (root._pendingScreen) {
+                root._appliedScreen = root._pendingScreen;
+                root._pendingScreen = null;
+            }
+            root.scheduleShow();
+        }
+    }
+
+    function applyTargetScreen() {
+        if (!root.targetScreen) {
+            root._pendingScreen = null;
+            screenSettleTimer.stop();
+            return;
+        }
+        if (!root._screenResolved) {
+            root._screenResolved = true;
+            root._appliedScreen = root.targetScreen;
+            root.scheduleShow();
+            return;
+        }
+        if (root._appliedScreen === root.targetScreen) {
+            root._pendingScreen = null;
+            screenSettleTimer.stop();
+            return;
+        }
+        root._pendingScreen = root.targetScreen;
+        screenSettleTimer.restart();
+    }
 
     function scheduleShow() {
         if (!root.targetScreen) {
@@ -42,8 +85,8 @@ PanelWindow {
         }
     }
 
-    onTargetScreenChanged: root.scheduleShow()
-    Component.onCompleted: root.scheduleShow()
+    onTargetScreenChanged: root.applyTargetScreen()
+    Component.onCompleted: root.applyTargetScreen()
 
     // Overlay: do not reserve space or shift other windows.
     exclusionMode: ExclusionMode.Ignore
@@ -100,7 +143,6 @@ PanelWindow {
 
     WallpaperModel {
         id: model
-        screenHeight: root.targetScreen ? root.targetScreen.height : 0
     }
 
     SettingsValidator {
@@ -143,6 +185,7 @@ PanelWindow {
         id: strip
         anchors.fill: parent
         items: []
+        liveEnabled: root.visible
         onActivated: index => {
             // A click applies immediately and leaves the field, so later
             // typing does not silently change the query.

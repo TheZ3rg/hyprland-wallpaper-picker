@@ -12,7 +12,7 @@ import Quickshell
 ///   awww              images and GIFs
 ///   mpvpaper          video wallpapers
 ///   Thumbnails        small tiles in the strip
-///   Previews          enlarged image or clip of the selected wallpaper
+///   Previews          enlarged image of the selected wallpaper
 ///   Strip             coverflow layout and animations
 ///   Overlay           the full-screen picker itself
 ///   Search            search field and matching
@@ -21,7 +21,7 @@ import Quickshell
 ///   awww         displays images and GIFs
 ///   mpvpaper     plays video wallpapers
 ///   thumbnail    small image in the strip
-///   preview      enlarged image or clip of the selected wallpaper
+///   preview      enlarged image of the selected wallpaper
 Singleton {
     id: root
 
@@ -223,7 +223,7 @@ Singleton {
         ///
         /// Both values use screen height, so the tile aspect stays the same on
         /// monitors with different aspect ratios. They also set the size of the
-        /// cached thumbnails.
+        /// cached thumbnails, which follow the largest connected screen.
         ///
         /// Example: heightRatio 0.35 and widthRatio 0.28.
         property real heightRatio: 0.32
@@ -247,8 +247,14 @@ Singleton {
         /// Example: 800 = 800 milliseconds, 0 = no fade.
         property int fadeInDuration: 600
 
-        /// Time into the video used for its still thumbnail and as the start
-        /// of its animated preview, in seconds.
+        /// Number of files processed at the same time during the scan.
+        ///
+        /// 0 picks a value from the CPU count. Higher values make the first
+        /// scan faster but use more CPU and memory.
+        property int workers: 0
+
+        /// Time into the video used for its still thumbnail, static preview
+        /// and the start of its live preview, in seconds.
         ///
         /// Falls back to the first frame when the video is shorter.
         ///
@@ -259,8 +265,8 @@ Singleton {
     /// The larger image shown in the center card.
     ///
     /// It is generated during the scan and cached. Changing its size, aspect or
-    /// quality regenerates it. This is independent of the animated clips in
-    /// previews.animated.
+    /// quality regenerates it. Videos and GIFs play live in the card; this
+    /// image is shown until their first frame is ready.
     property QtObject previews: QtObject {
         /// Enable the enlarged image.
         property bool enabled: true
@@ -277,8 +283,7 @@ Singleton {
         /// Quality of the cached static preview image, 1..100.
         ///
         /// Higher values are sharper but increase cache size and scan time.
-        /// This does not affect the animated clips or the wallpaper displayed
-        /// on the desktop.
+        /// This does not affect the wallpaper displayed on the desktop.
         property int quality: 85
 
         /// Cache directory for previews.
@@ -289,33 +294,13 @@ Singleton {
         /// Example: "/home/user/.cache/qs-wallpaper-picker/previews"
         property string cacheDir: root.thumbnails.cacheDir + "/previews"
 
-        /// Short muted clips shown in the center card.
-        ///
-        /// They are generated during the scan and cached at the same size as
-        /// the static preview. When disabled, videos and GIFs still get a
-        /// static enlarged image in the center card.
-        property QtObject animated: QtObject {
-            /// Enable animated previews.
+        /// Play videos and GIFs in the center card.
+        property QtObject live: QtObject {
+            /// Enable live playback.
+            ///
+            /// When false, videos and GIFs show only their static preview and
+            /// the multimedia backend is never loaded.
             property bool enabled: true
-
-            /// Preview clip length in milliseconds.
-            ///
-            /// Example: 2500 = 2.5 seconds.
-            property int duration: 3000
-
-            /// Clip frame rate.
-            ///
-            /// Higher is smoother but uses more memory and scan time.
-            ///
-            /// Example: 24 = 24 frames per second.
-            property int fps: 24
-
-            /// Quality of the generated animated preview clips, 1..100.
-            ///
-            /// Higher values keep more detail but make the cached WebP clips
-            /// larger and slower to decode. This does not affect the static
-            /// preview or the wallpaper displayed on the desktop.
-            property int quality: 85
         }
     }
 
