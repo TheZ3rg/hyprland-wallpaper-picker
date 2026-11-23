@@ -134,6 +134,13 @@ mkdir -p -- "$CACHE" || {
     exit 1
 }
 
+# The picker kills this process when it closes mid-scan, so the EXIT trap
+# cannot remove its temp directory. Clear those leftovers before starting.
+rm -rf -- "$CACHE"/.sync-thumbs.*
+if [ -n "$PREVIEW_DIR" ]; then
+    rm -rf -- "$PREVIEW_DIR"/.preview.* "$PREVIEW_DIR"/.video-preview.*
+fi
+
 # Build the find expression from both the still and video extension lists:
 # \( -iname "*.jpg" -o -iname "*.png" -o -iname "*.mp4" ... \).
 find_args=()
@@ -173,7 +180,9 @@ mkdir -p -- "$rows"
 list_files() {
     : > "$list"
     for dir in "${VALID_ROOTS[@]}"; do
-        if ! find "$dir" -maxdepth 1 -type f \( "${find_args[@]}" \) \
+        # -H follows a source folder that is a symlink; -xtype also accepts a
+        # symlinked wallpaper while ignoring broken links inside the folder.
+        if ! find -H "$dir" -maxdepth 1 -xtype f \( "${find_args[@]}" \) \
                 -print0 >> "$list"; then
             echo "sync-thumbs.sh: failed to scan $dir" >&2
             return 1
@@ -277,19 +286,17 @@ process_file() {
     preview_path=""
     if [ "$preview_enabled" -eq 1 ]; then
         if [ "$is_video" -eq 1 ]; then
-            if ! preview_path="$(bash "$SCRIPT_DIR/video-preview.sh" \
-                "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                "$POSTER_SEEK" "$PREVIEW_QUALITY" "$poster_frame")"; then
-                preview_path=""
-                warn "sync-thumbs.sh: failed to cache preview: $f"
-            fi
-        else
             if ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
                 "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
-                "$PREVIEW_QUALITY")"; then
+                "$PREVIEW_QUALITY" "$POSTER_SEEK" "$poster_frame")"; then
                 preview_path=""
                 warn "sync-thumbs.sh: failed to cache preview: $f"
             fi
+        elif ! preview_path="$(bash "$SCRIPT_DIR/preview-thumb.sh" \
+            "$f" "$PREVIEW_DIR" "$PREVIEW_W" "$PREVIEW_H" \
+            "$PREVIEW_QUALITY")"; then
+            preview_path=""
+            warn "sync-thumbs.sh: failed to cache preview: $f"
         fi
     fi
 
@@ -330,13 +337,18 @@ wait
 failed="$(wc -l < "$failures" 2>/dev/null || echo 0)"
 
 # Print the manifest in the sorted order, regardless of worker completion.
-declare -A used_names=()
+# Remember what this scan produced so the cleanup below can remove the rest.
+declare -A used_thumbs=()
+declare -A used_previews=()
 for i in "${!FILES[@]}"; do
     row="$rows/$i"
     if [ -f "$row" ]; then
-        cat "$row"
-        name="$(awk -F'\t' 'NR == 1 { n = $2; sub(/.*\//, "", n); print n }' "$row")"
-        [ -n "$name" ] && used_names["$name"]=1
+        row_text="$(< "$row")"
+        printf '%s\n' "$row_text"
+        thumb_path="$(printf '%s' "$row_text" | cut -f2)"
+        preview_path="$(printf '%s' "$row_text" | cut -f5)"
+        [ -n "$thumb_path" ] && used_thumbs["${thumb_path##*/}"]=1
+        [ -n "$preview_path" ] && used_previews["${preview_path##*/}"]=1
     elif [ -f "$row.failed" ]; then
         continue
     else
@@ -345,16 +357,33 @@ for i in "${!FILES[@]}"; do
     fi
 done
 
-# Prune cache entries this scan did not produce. Skip pruning when a directory
-# is missing or a scan failed, so a temporarily unavailable source cannot wipe
-# its cached thumbnails.
-if [ "$SKIP_PRUNE" -eq 0 ]; then
+# Delete cached files this scan did not produce. Only names matching our key
+# shape are ours to remove, so a custom cache directory cannot lose unrelated
+# files. Skip pruning when a directory is missing or a scan failed, so a
+# temporarily unavailable source cannot wipe its cache.
+prune_dir() {
+    local -n used="$2"
+    local dir="$1" cached name
     while IFS= read -r -d '' cached; do
         name="${cached##*/}"
-        if [ -z "${used_names["$name"]:-}" ]; then
-            rm -f -- "$cached"
-        fi
-    done < <(find "$CACHE" -maxdepth 1 -type f -print0 2>/dev/null)
+        [[ "$name" =~ ^[0-9a-f]{32}\.jpg$ ]] || continue
+        [ -n "${used["$name"]:-}" ] || rm -f -- "$cached"
+    done < <(find "$dir" -maxdepth 1 -type f -print0 2>/dev/null)
+}
+
+if [ "$SKIP_PRUNE" -eq 0 ]; then
+    prune_previews="$preview_enabled"
+    preview_real="$(realpath -m -- "$PREVIEW_DIR")"
+    cache_real="$(realpath -m -- "$CACHE")"
+    if [ "$preview_enabled" -eq 1 ] && [ "$preview_real" = "$cache_real" ]; then
+        # Previews and thumbnails share a directory, so prune them together.
+        for name in "${!used_previews[@]}"; do
+            used_thumbs["$name"]=1
+        done
+        prune_previews=0
+    fi
+    prune_dir "$CACHE" used_thumbs
+    [ "$prune_previews" -eq 1 ] && prune_dir "$PREVIEW_DIR" used_previews
 fi
 
 if [ "$MISSING_DIRS" -gt 0 ]; then

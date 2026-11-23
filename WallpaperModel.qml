@@ -17,7 +17,7 @@ Item {
     height: 0
 
     // One object per wallpaper:
-    // { path, source, thumb, aspect, preview, live, video, gif }.
+    // { path, source, thumb, preview, live, video, gif }.
     property var items: []
 
     // Logical height of the largest connected screen. Cache sizes follow it,
@@ -42,7 +42,7 @@ Item {
 
     property string error: ""
 
-    // Last non-empty stderr line from sync-thumbs.sh. It is promoted to
+    // First non-empty stderr line from sync-thumbs.sh. It is promoted to
     // `error` when the script fails.
     property string _stderr: ""
 
@@ -149,8 +149,7 @@ Item {
                 if (parts.length < 2 || parts[0] === "")
                     return;
 
-                // Rows are only emitted for successfully generated thumbnails,
-                // so dimensions are always present and describe the real file.
+                // Reject truncated or malformed rows.
                 const w = parseFloat(parts[2]);
                 const h = parseFloat(parts[3]);
                 if (!(w > 0) || !(h > 0))
@@ -164,7 +163,6 @@ Item {
                     // Original file, used for live video and GIF playback.
                     source: root.toFileUrl(parts[0]),
                     thumb: root.toFileUrl(parts[1]),
-                    aspect: w / h,
                     preview: preview !== "" ? root.toFileUrl(preview) : "",
                     // Animated on the desktop: video or GIF.
                     live: kind === "video" || kind === "gif",
@@ -178,7 +176,9 @@ Item {
 
         stderr: SplitParser {
             onRead: line => {
-                if (line !== "")
+                // Keep the first diagnostic: it names the file or folder that
+                // failed, where the last line is often just a summary.
+                if (line !== "" && root._stderr === "")
                     root._stderr = line;
             }
         }
