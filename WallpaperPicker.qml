@@ -35,8 +35,9 @@ PanelWindow {
 
     Timer {
         id: screenSettleTimer
-        // A zero interval still defers to the next event-loop turn.
-        interval: 0
+        // A short delay lets a burst of follow_mouse focus changes settle
+        // before the window moves and remaps its layer surface.
+        interval: 30
         onTriggered: {
             if (root._pendingScreen) {
                 root._appliedScreen = root._pendingScreen;

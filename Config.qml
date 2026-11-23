@@ -40,7 +40,7 @@ Singleton {
         ///     "/mnt/media/Wallpapers"
         /// ]
         property var dirs: [
-            Quickshell.env("HOME") + "/Pictures/Wallpapers",
+            Quickshell.env("HOME") + "/Pictures/Wallpapers-still",
             Quickshell.env("HOME") + "/Pictures/Wallpapers-live"
         ]
     }

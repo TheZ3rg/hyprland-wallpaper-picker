@@ -32,7 +32,6 @@ Item {
 
     signal queried()
     signal applied(string path)
-    signal applyFailed(string message)
 
     readonly property string applyScript: Quickshell.shellPath("scripts/apply.sh")
     readonly property string applyLiveScript: Quickshell.shellPath("scripts/apply-live.sh")
@@ -226,7 +225,6 @@ Item {
                 root.applyingLive = false;
                 root._pendingPath = "";
                 root.error = "could not start the apply script";
-                root.applyFailed(root.error);
             }
         }
 
@@ -246,7 +244,6 @@ Item {
 
             if (code !== 0) {
                 root.error = message;
-                root.applyFailed(message);
                 return;
             }
 

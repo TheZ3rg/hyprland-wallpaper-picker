@@ -23,7 +23,7 @@ Item {
     id: root
 
     // Flat list from WallpaperModel:
-    // { path, source, thumb, aspect, preview, live, video, gif }.
+    // { path, source, thumb, preview, live, video, gif }.
     property var items: []
 
     // False while the picker window is hidden. Live playback must not load the
@@ -104,8 +104,8 @@ Item {
     property bool animatePosition: true
     property int positionDuration:
         Math.max(0, Config.strip.moveAnimationDuration)
-    // Duration requested for the next target change, or -1 for the
-    // distance-based default.
+    // Duration for the next target change, or -1 for the configured
+    // strip.moveAnimationDuration.
     property int _nextDuration: -1
     Behavior on position {
         enabled: root.animatePosition
@@ -488,8 +488,9 @@ Item {
 
     // Layout for the current window, recomputed on every frame of the
     // animation. Each entry is { x, w, h, s }: left edge before centering,
-    // width, height and scale. Width follows the image aspect. Coordinates
-    // are local to `windowStart`; the offsets cancel when the row is centered.
+    // width, height and scale. Width is the base tile width, widened toward
+    // the center by the preview scale. Coordinates are local to `windowStart`;
+    // the offsets cancel when the row is centered.
     readonly property var metrics: {
         const out = [];
         let x = 0;
@@ -651,8 +652,6 @@ Item {
             // and GIFs keep this frame visible until their first live frame is
             // ready.
             Image {
-                id: previewImage
-
                 anchors.fill: parent
                 source: cell.previewActive ? cell.previewUrl : ""
                 fillMode: Image.PreserveAspectCrop
