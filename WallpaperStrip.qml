@@ -43,6 +43,7 @@ Item {
 
     signal activated(int index)
     signal navigated()
+    signal thumbDecoded()
 
     readonly property int count: items.length
     readonly property bool endless: Config.strip.loop
@@ -70,6 +71,23 @@ Item {
         id: liveIdleTimer
         interval: 180
         onTriggered: root.liveIdle = true
+    }
+
+    // The first MediaPlayer blocks the GUI thread while it loads the
+    // multimedia backend. Starting it during the thumbnail fade-in freezes
+    // the opacity animations and leaves the strip translucent. Wait until no
+    // new thumbnail has decoded for the whole fade duration.
+    property bool fadesSettled: false
+
+    Timer {
+        id: fadeSettleTimer
+        interval: Math.max(0, Config.thumbnails.fadeInDuration) + 100
+        onTriggered: root.fadesSettled = true
+    }
+
+    onThumbDecoded: {
+        root.fadesSettled = false;
+        fadeSettleTimer.restart();
     }
 
     onMovingChanged: {
@@ -454,6 +472,7 @@ Item {
         updateWindow(true);
         refreshSlots();
         liveIdleTimer.start();
+        fadeSettleTimer.start();
     }
 
     function scaleForIndex(i) {
@@ -567,7 +586,7 @@ Item {
                 root.liveEnabled && Config.previews.live.enabled
                     && cell.entry !== null
                     && cell.centerWeight > 0.001
-                    && !root.moving && root.liveIdle
+                    && !root.moving && root.liveIdle && root.fadesSettled
             readonly property bool videoLive:
                 cell.liveActive && cell.entry !== null
                     && cell.entry.video === true
@@ -618,9 +637,12 @@ Item {
                     // Reveal failed thumbnails too; otherwise a broken file
                     // would stay invisible instead of showing as an error.
                     if (status === Image.Ready || status === Image.Error) {
+                        const wasDecoded = cell.decoded;
                         cell.decodedUrl = cell.thumbUrl;
                         if (cell.thumbUrl !== "")
                             root.decodedUrls[cell.thumbUrl] = true;
+                        if (!wasDecoded)
+                            root.thumbDecoded();
                     }
                 }
             }
