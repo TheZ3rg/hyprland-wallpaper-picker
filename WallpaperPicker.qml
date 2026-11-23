@@ -18,10 +18,11 @@ PanelWindow {
 
     readonly property var targetScreen: ScreenMetrics.screen
 
-    // Apply the first screen immediately. Later focus changes are applied
-    // after a short pause: with follow_mouse, crossing the pointer between
-    // outputs can emit several focus changes in a row, and each one would
-    // resize the window and its live video surface again.
+    // Apply the first screen immediately. Later focus changes are coalesced
+    // on the next event-loop turn: with follow_mouse, crossing the pointer
+    // between outputs can emit several focus changes in one batch, and moving
+    // the window synchronously from that handler can remap the layer surface
+    // (and its video texture) more than once.
     property var _appliedScreen: null
     property var _pendingScreen: null
     property bool _screenResolved: false
@@ -34,7 +35,8 @@ PanelWindow {
 
     Timer {
         id: screenSettleTimer
-        interval: 150
+        // A zero interval still defers to the next event-loop turn.
+        interval: 0
         onTriggered: {
             if (root._pendingScreen) {
                 root._appliedScreen = root._pendingScreen;
