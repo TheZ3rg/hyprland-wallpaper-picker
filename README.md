@@ -1,10 +1,10 @@
 <h1 align="center">~ Hyprland wallpaper picker ~</h1>
 
-<p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options.</em></p>
+<p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options</em></p>
 
-<img width="1280" height="720" align="center" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20">
+<p align="center"><img width="1280" height="720" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20"></p>
 
-<p align="center"><strong>Fast, beautiful, easily customizable, and built for keyboard/mouse/touchpad control.</strong></p>
+<p align="center"><strong>A full-screen overlay that allows you to quickly and easily manage your wallpaper collection</strong></p>
 
 <h2 align="center">~ Appearance ~</h2>
 
@@ -21,12 +21,12 @@
 
 <h2 align="center">~ Features ~</h2>
 
-- Easily and extensively customizable appearance.
-- Supports all major image and video extensions
-- Fast startup and responsive interface.
-- Smooth and customizable animations.
-- Keyboard, mouse and trackpad navigation.
-- Fast search by name.
+- **Easily and extensively customizable appearance.**
+- **Supports all major image and video extensions.**
+- **Fast startup and responsive interface.**
+- **Smooth and customizable animations.**
+- **Keyboard, mouse and trackpad navigation.**
+- **Fast search by name.**
   
 <h2 align="center">~ Requirements ~</h2>
 
