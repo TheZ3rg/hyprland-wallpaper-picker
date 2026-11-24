@@ -8,8 +8,6 @@
 
 <h2 align="center">~ Appearance ~</h2>
 
-
-
 <table>
   <tr>
     <td><img src="https://github.com/user-attachments/assets/9ea6a8de-eadc-4d3f-a5f7-595eb9f72e13"/></td>
@@ -17,28 +15,19 @@
   </tr>
   <tr>
     <td><img src="https://github.com/user-attachments/assets/46ba46b7-34da-4ca1-a6df-450f234a22b8"/></td>
-    <td><img src="1"/></td>
+    <td><img src="https://github.com/user-attachments/assets/dec96fd7-c6b0-4e62-9e54-1a19eec8d2bd"/></td>
   </tr>
 </table>
 
 <h2 align="center">~ Features ~</h2>
 
-- An animated coverflow strip with keyboard, mouse and trackpad navigation.
-- Click a tile or press `Enter` to apply that wallpaper.
-- Search by file name as you type; the strip can jump to the best match or
-  hide the other wallpapers.
-- Images, GIFs and video wallpapers in the same strip, with a `LIVE` badge on
-  the ones that move.
-- Scans several folders and caches thumbnails, so large collections stay
-  responsive.
-- Starts on the wallpaper that is currently on your desktop.
-- Configurable awww transitions when switching wallpapers.
-- Optional seamless looping at the ends of the strip.
-- Full-screen overlay; optionally blur the desktop behind it with one
-  Hyprland rule.
-- One keybind toggles the picker open and closed.
-- Errors are shown in the picker instead of failing silently.
-
+- Easily and extensively customizable appearance.
+- Supports all major image and video extensions
+- Fast startup and responsive interface.
+- Smooth and customizable animations.
+- Keyboard, mouse and trackpad navigation.
+- Fast search by name.
+  
 <h2 align="center">~ Requirements ~</h2>
 
 - [Hyprland](https://hypr.land) (layer-shell support)
