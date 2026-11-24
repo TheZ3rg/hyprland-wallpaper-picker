@@ -8,9 +8,9 @@
 
 <h2 align="center">~ Appearance ~</h2>
 
-<img width="320" height="180" alt="wallpaper_img" src="https://github.com/user-attachments/assets/9ea6a8de-eadc-4d3f-a5f7-595eb9f72e13">
-<img width="320" height="180" alt="wallpaper_img" src="https://github.com/user-attachments/assets/77b5a0ff-3771-436b-ac7b-c7961f5024e3">
-<img width="320" height="180" alt="wallpaper_img" src="https://github.com/user-attachments/assets/46ba46b7-34da-4ca1-a6df-450f234a22b8">
+<img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/9ea6a8de-eadc-4d3f-a5f7-595eb9f72e13"> <img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/77b5a0ff-3771-436b-ac7b-c7961f5024e3">
+
+<img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/46ba46b7-34da-4ca1-a6df-450f234a22b8">
 
 <h2 align="center">~ Features ~</h2>
 
