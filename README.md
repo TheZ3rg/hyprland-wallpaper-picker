@@ -2,13 +2,15 @@
 
 <p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options.</em></p>
 
-<img width="1280" height="720" align="center" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20" />
+<img width="1280" height="720" align="center" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20">
 
-<p align="center"><strong>Fast, beautiful, easily customizable, and built for keyboard control.</strong></p>
+<p align="center"><strong>Fast, beautiful, easily customizable, and built for keyboard/mouse/touchpad control.</strong></p>
 
 <h2 align="center">~ Appearance ~</h2>
 
-*More images or vids*
+<img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/9ea6a8de-eadc-4d3f-a5f7-595eb9f72e13">
+<img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/77b5a0ff-3771-436b-ac7b-c7961f5024e3">
+<img width="480" height="270" alt="wallpaper_img" src="https://github.com/user-attachments/assets/46ba46b7-34da-4ca1-a6df-450f234a22b8">
 
 <h2 align="center">~ Features ~</h2>
 
