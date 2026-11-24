@@ -6,10 +6,8 @@
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=stars&color=67ac09"></a>
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker"><img alt="repo size" src="https://img.shields.io/github/repo-size/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=size&color=67ac09"></a>
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=license"></a>
-</p>
-
-<p align="center">
-  <img alt="for Hyprland" src="https://img.shields.io/badge/for-Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=#00BFFF">
+  <br>
+  <img alt="for Hyprland" src="https://img.shields.io/badge/for-Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=00BFFF">
   <img alt="built with Quickshell" src="https://img.shields.io/badge/built%20with-Quickshell-blue?style=flat-square">
 </p>
 
