@@ -4,6 +4,10 @@
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/commits/main"><img alt="last commit" src="https://img.shields.io/github/last-commit/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=last%20commit"></a>
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=stars"></a>
   <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker"><img alt="repo size" src="https://img.shields.io/github/repo-size/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=size"></a>
+  <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/blob/main/LICENSE"><img alt="license" src="https://img.shields.io/github/license/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=license"></a>
+  <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/issues"><img alt="open issues" src="https://img.shields.io/github/issues/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=issues"></a>
+  <img alt="for Hyprland" src="https://img.shields.io/badge/for-Hyprland-58E1FF?style=flat-square&logo=hyprland&logoColor=111111">
+  <img alt="built with Quickshell" src="https://img.shields.io/badge/built%20with-Quickshell-blue?style=flat-square">
 </p>
 
 <p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options</em></p>
