@@ -1,5 +1,11 @@
 <h1 align="center">~ Hyprland wallpaper picker ~</h1>
 
+<p align="center">
+  <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/commits/main"><img alt="last commit" src="https://img.shields.io/github/last-commit/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=last%20commit"></a>
+  <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker/stargazers"><img alt="stars" src="https://img.shields.io/github/stars/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=stars"></a>
+  <a href="https://github.com/TheZ3rg/hyprland-wallpaper-picker"><img alt="repo size" src="https://img.shields.io/github/repo-size/TheZ3rg/hyprland-wallpaper-picker?style=flat-square&label=size"></a>
+</p>
+
 <p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options</em></p>
 
 <p align="center"><img width="1280" height="720" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20"></p>
