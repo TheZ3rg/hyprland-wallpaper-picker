@@ -1,61 +1,60 @@
-# Hyprland wallpaper picker
+<h1 align="center">~ Hyprland wallpaper picker ~</h1>
 
-A coverflow-style wallpaper picker for Hyprland, built with
-[Quickshell](https://quickshell.org), [awww](https://codeberg.org/LGFae/awww)
-and [mpvpaper](https://github.com/GhostNaN/mpvpaper).
+<p align="center"><em>A wallpaper picker for Hyprland with extensive configuration options.</em></p>
 
-It scans one or more folders, caches thumbnails, and opens as a full-screen
-layer-shell overlay on the focused monitor. The desktop behind it is blurred by
-Hyprland, not by the picker.
+<img width="1280" height="720" align="center" alt="preview" src="https://github.com/user-attachments/assets/a1f18a31-3094-4873-a30e-474863f0cf20" />
 
-## Features
+<p align="center"><strong>Fast, beautiful, easily customizable, and built for keyboard control.</strong></p>
 
-- Animated coverflow strip with keyboard, mouse and trackpad navigation.
-- Scans one or more wallpaper folders (`source.dirs`).
-- Optional looping (`strip.loop`): enabled keeps the row continuous and repeats
-  wallpapers when needed; disabled stops at the ends.
-- Search by wallpaper name: jump to the best match while typing, or hide
-  non-matching wallpapers (see `search.mode` in `Config.qml`). Set
-  `search.enabled` to `false` to hide the field.
-- Only a window of tiles around the selection is instantiated, so large
-  folders stay responsive.
-- Thumbnail cache keyed by source path and generation options; changing the
-  thumbnail size or quality regenerates it automatically.
-- The center card shows a wider, higher-resolution crop generated and cached
-  during the scan, so it is available as soon as a wallpaper is selected.
-- Thumbnails are generated with ImageMagick 7; files that cannot be converted
-  are skipped and reported.
-- Starts on the wallpaper that is currently displayed.
-- GIFs are supported, and animated GIFs are also shown live on the desktop.
-- Video wallpapers are played by [mpvpaper](https://github.com/GhostNaN/mpvpaper)
-  and appear in the same strip as images.
-- Videos and animated GIFs play muted in the center card once the strip
-  settles. A cached still preview is shown until the first frame is ready.
-- A `LIVE` badge marks wallpapers that animate on the desktop.
-- The picker switches between awww and mpvpaper automatically.
-- Applies wallpapers with configurable awww transitions.
-- Shows scan, query and apply errors in the overlay instead of failing silently.
-- Single-instance toggle through Quickshell IPC.
+<h2 align="center">~ Appearance ~</h2>
 
-## Requirements
+*More images or vids*
 
-- Hyprland (layer-shell support)
-- Quickshell (`qs`)
-- awww, including `awww-daemon`
-- mpvpaper (with its libmpv dependency), for video wallpapers
-- ffmpeg, for video posters
+<h2 align="center">~ Features ~</h2>
+
+- An animated coverflow strip with keyboard, mouse and trackpad navigation.
+- Click a tile or press `Enter` to apply that wallpaper.
+- Search by file name as you type; the strip can jump to the best match or
+  hide the other wallpapers.
+- Images, GIFs and video wallpapers in the same strip, with a `LIVE` badge on
+  the ones that move.
+- Scans several folders and caches thumbnails, so large collections stay
+  responsive.
+- Starts on the wallpaper that is currently on your desktop.
+- Configurable awww transitions when switching wallpapers.
+- Optional seamless looping at the ends of the strip.
+- Full-screen overlay; optionally blur the desktop behind it with one
+  Hyprland rule.
+- One keybind toggles the picker open and closed.
+- Errors are shown in the picker instead of failing silently.
+
+<h2 align="center">~ Requirements ~</h2>
+
+- [Hyprland](https://hypr.land) (layer-shell support)
+- [Quickshell](https://quickshell.org) (`qs`)
+- [awww](https://codeberg.org/LGFae/awww), including `awww-daemon`
+- [mpvpaper](https://github.com/GhostNaN/mpvpaper) (with its libmpv
+  dependency), for video wallpapers
+- [ffmpeg](https://ffmpeg.org), for video posters
 - bash, coreutils, findutils, procps-ng and util-linux
-- ImageMagick 7 (`magick`)
+- [ImageMagick](https://imagemagick.org) 7 (`magick`)
 
-## Setup
+<h2 align="center">~ Setup ~</h2>
 
-1. Make sure the scripts are executable:
+1. Clone the repository:
+
+   ```sh
+   git clone https://github.com/TheZ3rg/hyprland-wallpaper-picker.git
+   cd hyprland-wallpaper-picker
+   ```
+
+2. Make sure the scripts are executable:
 
    ```sh
    chmod +x scripts/*.sh
    ```
 
-2. Bind the toggle script in Hyprland. For `hyprland.conf`:
+3. Bind the toggle script in Hyprland. For `hyprland.conf`:
 
    ```ini
    bind = SUPER, W, exec, /path/to/hyprland-wallpaper-picker/scripts/open-picker.sh
@@ -67,7 +66,7 @@ Hyprland, not by the picker.
    hl.bind("SUPER + W", hl.dsp.exec_cmd("/path/to/hyprland-wallpaper-picker/scripts/open-picker.sh"))
    ```
 
-3. Optional: blur the desktop behind the picker:
+4. Optional: blur the desktop behind the picker:
 
    ```ini
    layerrule = blur, quickshell:wallpaperPicker
@@ -80,14 +79,14 @@ Hyprland, not by the picker.
    The namespace is set in `WallpaperPicker.qml`; if you change it, update the
    layer rule to match.
 
-The toggle script starts `awww-daemon` if it is not already running. Running
-the picker directly also works:
+The toggle script starts `awww-daemon` if it is not already running, and
+pressing the keybind again closes the picker. Running it directly also works:
 
 ```sh
 qs -p /path/to/hyprland-wallpaper-picker
 ```
 
-## Usage
+<h2 align="center">~ Usage ~</h2>
 
 | Input | Action |
 | --- | --- |
@@ -100,76 +99,38 @@ qs -p /path/to/hyprland-wallpaper-picker
 While the search field is focused, typing updates the query, `Left` / `Right`
 still move the strip, and `Enter` applies the selected wallpaper. Hold `Ctrl`
 or `Shift` with the arrows to move the text cursor or select text. `Escape`
-clears the query, a second `Escape` leaves the field, and the next one closes
-the picker. Search matches file names without their extension,
-case-insensitively, and ranks names starting with the query before names that
-merely contain it.
+clears the query, a second `Escape` leaves the field, and a third closes the
+picker. Search matches file names without their extension, case-insensitively,
+and ranks names starting with the query before names that merely contain it.
 
 Set `search.enabled` to `false` to hide the field and disable `Ctrl+F`.
 
 `strip.loop` selects how the ends behave: `true` wraps seamlessly, repeating
 wallpapers if the folder is smaller than the window; `false` stops at the ends.
 
-The picker closes after a successful apply by default; see `overlay.closeOnApply`
-in `Config.qml`. If applying fails, it stays open and shows the error. A live
-wallpaper keeps playing after the picker closes.
+The picker closes after a successful apply by default; see
+`overlay.closeOnApply` in `Config.qml`. If applying fails, it stays open and
+shows the error. A live wallpaper keeps playing after the picker closes.
 
-## Configuration
+<h2 align="center">~ Configuration ~</h2>
 
-All settings live in [`Config.qml`](Config.qml), and each property is
-documented there. The main groups are:
+All settings live in [`Config.qml`](Config.qml), and every property is
+documented there. The most common ones are:
 
-- wallpaper folders;
-- awww: image/GIF extensions, transitions, resize and filter;
-- mpvpaper: video extensions, layer, mpv options and pausing when hidden;
-- thumbnail size, quality, cache, fade-in, video poster time and scan workers;
-- static preview size and quality, and live playback on/off;
-- strip height, spacing ratio, looping, coverflow/center-card scaling, the
-  `LIVE` badge and its text size, and move/open animation durations;
-- overlay layer, background dim, status text size, informational messages and
-  close behaviour;
-- search enabled, mode, field size and position, margin ratio, opacity and
-  animation duration.
+| Setting | What it does |
+| --- | --- |
+| `source.dirs` | Folders scanned for wallpapers; scanning is not recursive. |
+| `awww.transition.type` / `duration` | Transition used when applying an image or GIF. |
+| `awww.resize` / `filter` | How images fill the screen and how they are scaled. |
+| `mpvpaper.enabled` / `options` | Turn video wallpapers on or off and pass extra mpv options, e.g. `no-audio` to mute them. |
+| `thumbnails.heightRatio` / `widthRatio` | Tile size in the strip. |
+| `strip.loop` | Wrap the strip at the ends. |
+| `search.enabled` / `mode` | Show the search field; `scroll` jumps to the best match, `filter` hides non-matching wallpapers. |
+| `overlay.closeOnApply` / `backgroundDim` / `layer` | Close after applying, dim the desktop, and choose the layer-shell layer. |
 
-The cache defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
-
-## Notes
-
-- Invalid `Config.qml` values raise an error, are listed in the overlay, and
-  block applying. Browsing and search still work.
-- Errors from the scanner, wallpaper queries, `awww img` and `mpvpaper` are
-  shown at the bottom of the overlay.
-- ImageMagick 7 is required. A missing binary, an unreadable wallpaper folder
-  or a file that cannot be converted is reported in the overlay.
-- Videos are played with mpvpaper on the layer selected by `mpvpaper.layer`.
-  `background` is the default, but awww also draws there; if the video does
-  not appear, use `bottom`, which stays above awww and below normal windows.
-- Video audio is controlled by `mpvpaper.options`. Add `no-audio` to mute the
-  video, or use `volume=...` to set its volume. Previews are always silent.
-- Applying a wallpaper replaces any mpvpaper process of the current user.
-  Applying an image stops mpvpaper first; applying a video stops it, starts
-  the new video and clears awww so no old image or GIF keeps rendering behind
-  it. This also stops an mpvpaper started outside the picker.
-- Video posters are generated during the scan, and static previews are cached
-  for every wallpaper. Videos and GIFs themselves are not cached: the center
-  card decodes them live, starting when the strip settles and stopping as soon
-  as the card leaves the center or the row starts moving.
-- GIFs are supported, but the first apply and thumbnail generation can be
-  slow, and awww's cache may exceed 100 MB per GIF.
-- Scanning is non-recursive: only files directly inside the configured folders
-  are listed.
-- `Config.overlay.layer` defaults to `overlay`, so the picker covers status
-  bars. Set it to `top` to keep bars that also use the overlay layer visible
-  above the picker.
-- Previews are generated and cached during the scan, like thumbnails.
-  If a preview is missing or failed, that wallpaper simply does not widen.
-- Cache sizes follow the largest connected screen, so moving the picker
-  between monitors with different resolutions does not regenerate them.
-- The scan processes files in parallel; `thumbnails.workers` sets the number
-  of simultaneous conversions (0 picks it from the CPU count).
-- The picker opens on the monitor that has focus at startup and follows focus
-  changes while it is open.
+Restart the picker after editing the configuration. The thumbnail cache
+defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
 
 ## License
 
-MIT
+MIT, see [LICENSE](LICENSE).
