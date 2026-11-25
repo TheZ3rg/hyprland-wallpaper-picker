@@ -45,13 +45,13 @@
 
 - [Hyprland](https://hypr.land) - Wayland compositor.
 - [Quickshell](https://quickshell.org) - toolkit for building Wayland shells with QtQuick.
-- [Qt 6 Multimedia](https://doc.qt.io/qt-6/qtmultimedia-index.html) - the `QtMultimedia` QML module, used for live video/GIF previews.
 - [awww](https://codeberg.org/LGFae/awww) - displays images and GIFs.
 - [ImageMagick 7](https://imagemagick.org) - generates thumbnails and previews.
 - bash (4.3+), coreutils, findutils, grep, sed, procps-ng and util-linux - basic Linux packages.
 
 <h4>May be useful</h4>
 
+- [Qt 6 Multimedia](https://doc.qt.io/qt-6/qtmultimedia-index.html) - live video playback in the center card; without it the static preview is shown.
 - [mpvpaper](https://github.com/GhostNaN/mpvpaper) - plays video wallpapers (needs mpv).
 - [ffmpeg](https://ffmpeg.org) - video thumbnails and poster frames.
 

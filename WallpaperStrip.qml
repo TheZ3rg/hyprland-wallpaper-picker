@@ -1,5 +1,4 @@
 import QtQuick
-import QtMultimedia
 
 /**
  * Horizontal coverflow strip of wallpapers.
@@ -29,6 +28,10 @@ Item {
     // False while the picker window is hidden. Live playback must not load the
     // multimedia backend before the first frame is on screen.
     property bool liveEnabled: true
+
+    // Set when QtMultimedia is not installed, so every centered video does not
+    // retry loading VideoPreview.qml.
+    property bool _videoUnavailable: false
 
     // Assigning this animates `position` to the new index.
     property int currentIndex: 0
@@ -665,55 +668,33 @@ Item {
             }
 
             // Live video playback. The player exists only while the card is
-            // centered and the strip is idle; scrolling destroys it.
+            // centered and the strip is idle; scrolling destroys it. It lives
+            // in its own file so a missing QtMultimedia module only disables
+            // this card, not the whole picker.
             Loader {
+                id: videoLoader
+
                 anchors.fill: parent
-                active: cell.videoLive
+                active: cell.videoLive && !root._videoUnavailable
                 asynchronous: true
+                source: "VideoPreview.qml"
 
-                sourceComponent: Component {
-                    Item {
-                        id: videoRoot
-                        anchors.fill: parent
+                onLoaded: item.seekMs = Math.max(0, Math.round(
+                    Config.thumbnails.videoPosterSeek * 1000))
 
-                        property bool seeked: false
-
-                        MediaPlayer {
-                            id: videoPlayer
-
-                            source: cell.entry ? cell.entry.source : ""
-                            videoOutput: videoSurface
-                            audioOutput: AudioOutput { muted: true }
-                            loops: MediaPlayer.Infinite
-                            autoPlay: false
-
-                            onSourceChanged: {
-                                videoRoot.seeked = false;
-                            }
-
-                            onMediaStatusChanged: {
-                                if (mediaStatus !== MediaPlayer.LoadedMedia
-                                        && mediaStatus !== MediaPlayer.BufferedMedia)
-                                    return;
-                                if (!videoRoot.seeked) {
-                                    videoRoot.seeked = true;
-                                    position = Math.max(0, Math.round(
-                                        Config.thumbnails.videoPosterSeek * 1000));
-                                }
-                                play();
-                            }
-                        }
-
-                        VideoOutput {
-                            id: videoSurface
-                            anchors.fill: parent
-                            fillMode: VideoOutput.PreserveAspectCrop
-                            visible: videoPlayer.playbackState
-                                    === MediaPlayer.PlayingState
-                                && videoPlayer.hasVideo
-                        }
-                    }
+                onStatusChanged: {
+                    if (status === Loader.Error)
+                        root._videoUnavailable = true;
                 }
+            }
+
+            // A jump can swap the slot to another video without unloading the
+            // player, so keep its source bound to the current entry.
+            Binding {
+                target: videoLoader.item
+                property: "source"
+                value: cell.entry ? cell.entry.source : ""
+                when: videoLoader.item !== null
             }
 
             // Animated GIFs play from the original file. The static preview
