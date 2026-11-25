@@ -41,18 +41,19 @@
   
 <h2 align="center">~ Dependencies ~</h2>
 
-<h4> Must-have</h4>
+<h4>Must-have</h4>
 
 - [Hyprland](https://hypr.land) - Wayland compositor.
-- [Quickshell](https://quickshell.org) - panel/widget constructor for Wayland.
-- [awww](https://codeberg.org/LGFae/awww) - for still wallpapers.
-- bash, coreutils, findutils, procps-ng and util-linux - basic linux packets.
+- [Quickshell](https://quickshell.org) - toolkit for building Wayland shells with QtQuick (provides `qs`).
+- [Qt 6 Multimedia](https://doc.qt.io/qt-6/qtmultimedia-index.html) - the `QtMultimedia` QML module, used for live video/GIF previews.
+- [awww](https://codeberg.org/LGFae/awww) - displays images and GIFs.
+- [ImageMagick 7](https://imagemagick.org) - generates thumbnails and previews (`magick`).
+- bash (4.3+), coreutils, findutils, grep, sed, procps-ng and util-linux - basic Linux packages.
 
-<h4> May be useful</h4>
+<h4>May be useful</h4>
 
-- [mpvpaper](https://github.com/GhostNaN/mpvpaper) - for video wallpapers.
-- [ffmpeg](https://ffmpeg.org) - for video posters.
-- [ImageMagick 7](https://imagemagick.org) - 
+- [mpvpaper](https://github.com/GhostNaN/mpvpaper) - plays video wallpapers (needs mpv).
+- [ffmpeg](https://ffmpeg.org) - video thumbnails and poster frames.
 
 <h2 align="center">~ Setup ~</h2>
 
