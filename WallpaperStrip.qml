@@ -33,6 +33,12 @@ Item {
     // retry loading VideoPreview.qml.
     property bool _videoUnavailable: false
 
+    // Missing optional package for an enabled feature.
+    readonly property string warning: Config.previews.live.enabled
+            && root._videoUnavailable
+        ? "Qt 6 Multimedia is not installed; live video previews are disabled"
+        : ""
+
     // Assigning this animates `position` to the new index.
     property int currentIndex: 0
 
@@ -99,6 +105,19 @@ Item {
             liveIdleTimer.stop();
         } else {
             liveIdleTimer.restart();
+        }
+    }
+
+    // Detects the QtMultimedia module up front without creating a player, so
+    // the picker can warn before any video card is centered.
+    Loader {
+        id: multimediaProbe
+
+        active: Config.previews.live.enabled
+        source: "QtMultimediaProbe.qml"
+        onStatusChanged: {
+            if (status === Loader.Error)
+                root._videoUnavailable = true;
         }
     }
 

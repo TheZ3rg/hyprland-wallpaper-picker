@@ -30,6 +30,9 @@ Item {
 
     property string error: ""
 
+    // Missing optional package for an enabled feature, e.g. mpvpaper.
+    property string warning: ""
+
     signal queried()
     signal applied(string path)
 
@@ -264,5 +267,22 @@ Item {
         onTriggered: root.refresh()
     }
 
-    Component.onCompleted: refresh()
+    // Video wallpapers are optional, but a missing mpvpaper should be visible
+    // before the user tries to apply one.
+    Process {
+        id: mpvpaperCheck
+
+        command: ["bash", "-c", "command -v mpvpaper"]
+
+        onExited: (code, status) => {
+            if (Config.mpvpaper.enabled && code !== 0)
+                root.warning = "mpvpaper is not installed; video wallpapers cannot be applied";
+        }
+    }
+
+    Component.onCompleted: {
+        refresh();
+        if (Config.mpvpaper.enabled)
+            mpvpaperCheck.running = true;
+    }
 }

@@ -335,8 +335,19 @@ PanelWindow {
         backend.apply(item.path, item.video === true);
     }
 
+    // Missing optional packages for features that are enabled in Config.
+    // Warnings stay visible when info notifications are turned off.
+    readonly property var statusWarnings: {
+        const out = [];
+        if (backend.warning !== "")
+            out.push(backend.warning);
+        if (strip.warning !== "")
+            out.push(strip.warning);
+        return out;
+    }
+
     // Status shown at the bottom of the overlay. Errors take priority over
-    // progress and empty-state hints.
+    // warnings, and warnings over progress and empty-state hints.
     readonly property string statusText: {
         const errors = [];
         for (let i = 0; i < settingsValidator.errors.length; ++i)
@@ -349,6 +360,8 @@ PanelWindow {
             errors.push("wallpaper: " + backend.error);
         if (errors.length > 0)
             return errors.join("\n");
+        if (root.statusWarnings.length > 0)
+            return root.statusWarnings.join("\n");
         if (!Config.overlay.showInfoNotifications)
             return "";
         if (backend.applying)
@@ -370,6 +383,9 @@ PanelWindow {
 
     readonly property bool statusIsError:
         settingsValidator.hasErrors || model.error !== "" || backend.error !== ""
+
+    readonly property bool statusIsWarning:
+        !root.statusIsError && root.statusWarnings.length > 0
 
     Rectangle {
         id: statusBox
@@ -395,7 +411,9 @@ PanelWindow {
         radius: Math.round(statusBox.fontSize * 0.5)
         color: root.statusIsError
             ? Qt.rgba(0.30, 0.04, 0.04, 0.94)
-            : Qt.rgba(0, 0, 0, 0.78)
+            : root.statusIsWarning
+                ? Qt.rgba(0.30, 0.20, 0.03, 0.94)
+                : Qt.rgba(0, 0, 0, 0.78)
         border.width: 1
         border.color: Qt.rgba(1, 1, 1, 0.12)
 
