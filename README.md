@@ -39,33 +39,38 @@
 - **Keyboard, mouse and trackpad navigation.**
 - **Fast search by name.**
   
-<h2 align="center">~ Requirements ~</h2>
+<h2 align="center">~ Dependencies ~</h2>
 
-- [Hyprland](https://hypr.land) (layer-shell support)
-- [Quickshell](https://quickshell.org) (`qs`)
-- [awww](https://codeberg.org/LGFae/awww), including `awww-daemon`
-- [mpvpaper](https://github.com/GhostNaN/mpvpaper) (with its libmpv
-  dependency), for video wallpapers
-- [ffmpeg](https://ffmpeg.org), for video posters
-- bash, coreutils, findutils, procps-ng and util-linux
-- [ImageMagick](https://imagemagick.org) 7 (`magick`)
+<h4> Must-have</h4>
+
+- [Hyprland](https://hypr.land) - Wayland compositor.
+- [Quickshell](https://quickshell.org) - panel/widget constructor for Wayland.
+- [awww](https://codeberg.org/LGFae/awww) - for still wallpapers.
+- bash, coreutils, findutils, procps-ng and util-linux - basic linux packets.
+
+<h4> May be useful</h4>
+
+- [mpvpaper](https://github.com/GhostNaN/mpvpaper) - for video wallpapers.
+- [ffmpeg](https://ffmpeg.org) - for video posters.
+- [ImageMagick 7](https://imagemagick.org) - 
 
 <h2 align="center">~ Setup ~</h2>
 
-1. Clone the repository:
+1. Install required and additional useful dependencies from the list above.
+2. Clone the repository:
 
    ```sh
    git clone https://github.com/TheZ3rg/hyprland-wallpaper-picker.git
    cd hyprland-wallpaper-picker
    ```
 
-2. Make sure the scripts are executable:
+3. Make sure the scripts are executable:
 
    ```sh
    chmod +x scripts/*.sh
    ```
 
-3. Bind the toggle script in Hyprland. For `hyprland.conf`:
+4. Bind the toggle script in Hyprland. For `hyprland.conf`:
 
    ```ini
    bind = SUPER, W, exec, /path/to/hyprland-wallpaper-picker/scripts/open-picker.sh
@@ -77,7 +82,7 @@
    hl.bind("SUPER + W", hl.dsp.exec_cmd("/path/to/hyprland-wallpaper-picker/scripts/open-picker.sh"))
    ```
 
-4. Optional: blur the desktop behind the picker:
+5. Optional: blur the desktop behind the picker:
 
    ```ini
    layerrule = blur, quickshell:wallpaperPicker
