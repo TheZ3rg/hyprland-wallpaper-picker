@@ -113,37 +113,9 @@ qs -p /path/to/hyprland-wallpaper-picker
 | `Ctrl+F` / click the search field | Edit the wallpaper search |
 | `Escape` | Close without applying |
 
-While the search field is focused, typing updates the query, `Left` / `Right`
-still move the strip, and `Enter` applies the selected wallpaper. Hold `Ctrl`
-or `Shift` with the arrows to move the text cursor or select text. `Escape`
-clears the query, a second `Escape` leaves the field, and a third closes the
-picker. Search matches file names without their extension, case-insensitively,
-and ranks names starting with the query before names that merely contain it.
-
-Set `search.enabled` to `false` to hide the field and disable `Ctrl+F`.
-
-`strip.loop` selects how the ends behave: `true` wraps seamlessly, repeating
-wallpapers if the folder is smaller than the window; `false` stops at the ends.
-
-The picker closes after a successful apply by default; see
-`overlay.closeOnApply` in `Config.qml`. If applying fails, it stays open and
-shows the error. A live wallpaper keeps playing after the picker closes.
-
 <h2 align="center">~ Configuration ~</h2>
 
-All settings live in [`Config.qml`](Config.qml), and every property is
-documented there. The most common ones are:
-
-| Setting | What it does |
-| --- | --- |
-| `source.dirs` | Folders scanned for wallpapers; scanning is not recursive. |
-| `awww.transition.type` / `duration` | Transition used when applying an image or GIF. |
-| `awww.resize` / `filter` | How images fill the screen and how they are scaled. |
-| `mpvpaper.enabled` / `options` | Turn video wallpapers on or off and pass extra mpv options, e.g. `no-audio` to mute them. |
-| `thumbnails.heightRatio` / `widthRatio` | Tile size in the strip. |
-| `strip.loop` | Wrap the strip at the ends. |
-| `search.enabled` / `mode` | Show the search field; `scroll` jumps to the best match, `filter` hides non-matching wallpapers. |
-| `overlay.closeOnApply` / `backgroundDim` / `layer` | Close after applying, dim the desktop, and choose the layer-shell layer. |
+All settings live in [`Config.qml`](Config.qml), and every property is documented there.
 
 Restart the picker after editing the configuration. The thumbnail cache
 defaults to `~/.cache/qs-wallpaper-picker` and is safe to delete.
